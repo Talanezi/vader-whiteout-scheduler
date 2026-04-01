@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from 'app/hooks';
 import BottomOverlay from 'components/BottomOverlay';
 import MeetingForm from 'components/MeetingForm';
@@ -7,66 +7,81 @@ import { selectSelectedDates, setSelectedDates } from 'slices/selectedDates';
 import './DayPicker.css';
 import Calendar from './Calendar';
 import { useTodayString } from 'utils/dates.utils';
-import { useState } from 'react';
 import useSetTitle from 'utils/title.hook';
 
 export default function DayPicker() {
   const dispatch = useAppDispatch();
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const [clickedMeetButton, setClickedMeetButton] = useState(false);
+  const [clickedCreateButton, setClickedCreateButton] = useState(false);
   const todayString = useTodayString();
+
   const atLeastOneDateSelected = useAppSelector(
     state => Object.keys(selectSelectedDates(state)).length > 0
   );
 
-  useSetTitle();
+  useSetTitle('Scheduler');
 
   useEffect(() => {
-    // Select today's date by default
-    dispatch(setSelectedDates({[todayString]: true}));
+    dispatch(setSelectedDates({ [todayString]: true }));
   }, [dispatch, todayString]);
 
   useEffect(() => {
-    if (pathname === '/create' && !clickedMeetButton) {
-      // user navigated directly to /create without visiting the homepage first
+    if (pathname === '/create' && !clickedCreateButton) {
       navigate('/');
     }
-  }, [pathname, clickedMeetButton, navigate]);
+  }, [pathname, clickedCreateButton, navigate]);
 
-  if (clickedMeetButton && pathname === '/create') {
+  if (clickedCreateButton && pathname === '/create') {
     return <MeetingForm />;
   }
 
   const onClick = () => {
-    setClickedMeetButton(true);
+    setClickedCreateButton(true);
     navigate('/create');
   };
+
   return (
-    <>
-      <section className="d-flex align-items-center justify-content-center justify-content-md-between fs-4">
-        <p className="mb-0">On which days would you like to meet?</p>
+    <div className="vw-daypicker-page">
+      <section className="vw-section-card vw-daypicker-intro d-flex flex-column flex-md-row align-items-md-center justify-content-md-between">
+        <div className="vw-copy-block">
+          <div className="vw-kicker">Production scheduling</div>
+          <h1 className="vw-page-title">Select candidate production dates</h1>
+          <p className="vw-page-note">
+            Choose the days your crew could realistically make work, then build a shareable scheduling block for rehearsals, shoots, fittings, scouts, pickups, or reviews.
+          </p>
+        </div>
+
         <button
           className="btn btn-primary px-4 d-none d-md-block"
           onClick={onClick}
           disabled={!atLeastOneDateSelected}
         >
-          Let's meet
+          Continue
         </button>
       </section>
-      <section style={{marginTop: '4rem'}}>
-        <Calendar firstVisibleDate={todayString} />
+
+      <section className="vw-section-card vw-calendar-shell">
+        <div className="vw-calendar-topline">
+          <span className="vw-chip">Los Angeles time</span>
+          <span className="vw-chip">Crew-facing</span>
+          <span className="vw-chip">Drag-to-select later</span>
+        </div>
+
+        <div className="vw-calendar-wrap">
+          <Calendar firstVisibleDate={todayString} />
+        </div>
       </section>
+
       <BottomOverlay>
-        <Link to="/how-it-works" className="custom-link custom-link-inverted">How it works</Link>
         <button
-          className="btn btn-light px-4"
+          className="btn btn-primary px-4"
           onClick={onClick}
           disabled={!atLeastOneDateSelected}
         >
-          Let's meet
+          Continue
         </button>
       </BottomOverlay>
-    </>
+    </div>
   );
-};
+}
