@@ -212,7 +212,10 @@ export default class MicrosoftOAuth2Provider implements IOAuth2Provider {
       sub: clientID,
       iat: now,
     };
-    return jwtSign(payload, privateKey, { algorithm: header.alg, header });
+    return jwtSign(payload, privateKey as any, {
+  algorithm: header.alg as any,
+  header,
+} as any);
   }
 
   async getPartialTokenFormParams(
