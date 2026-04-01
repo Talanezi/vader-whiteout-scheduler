@@ -10,117 +10,117 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import './App.scss';
 import './custom.css';
 import 'common/common.css';
-// Make sure to use JSX camelCase style in the SVG file
-// See https://stackoverflow.com/a/61167146
-import Logo from 'assets/cabbage';
+
 import { useAppSelector } from 'app/hooks';
 import DayPicker from 'components/DayPicker/DayPicker';
 import ForgotPassword from 'components/ForgotPassword';
 import HistoryProvider from 'components/HistoryProvider';
-import HowItWorksPage from 'components/HowItWorksPage';
 import Login from 'components/Login';
 import Signup from 'components/Signup';
 import Meeting from 'components/availabilities/Meeting';
 import Profile from 'components/Profile';
 import Settings from 'components/Settings';
-import { selectTokenIsPresent } from 'slices/authentication';
-import { useState } from 'react';
-import { useExtractTokenFromQueryParams, useGetSelfInfoIfTokenIsPresent } from 'utils/auth.hooks';
-import ErrorPage from 'components/ErrorPage';
 import ConfirmLinkExternalCalendar from 'components/ConfirmLinkExternalCalendar';
 import ConfirmPasswordReset from 'components/ConfirmPasswordReset';
-import { BottomOverlayFiller } from 'components/BottomOverlay';
 import VerifyEmail from 'components/VerifyEmail';
 import Privacy from 'components/Privacy';
 import Feedback from 'components/Feedback';
 import TermsOfService from 'components/TermsOfService';
-import { useGetServerInfoQuery } from 'slices/api';
+import ErrorPage from 'components/ErrorPage';
+import WaitForServerInfo from 'components/WaitForServerInfo';
+import { BottomOverlayFiller } from 'components/BottomOverlay';
+import { selectTokenIsPresent } from 'slices/authentication';
+import {
+  useExtractTokenFromQueryParams,
+  useGetSelfInfoIfTokenIsPresent,
+} from 'utils/auth.hooks';
+
+const SOURCE_URL = 'https://github.com/Talanezi/vader-whiteout-scheduler';
 
 export default function App() {
-  // Make sure that every single component passed to a <Route>
-  // sets the document.title
   const dayPicker = <DayPicker />;
+
   return (
     <BrowserRouter>
       <HistoryProvider>
-        <Routes>
-          <Route path="/" element={<AppRoot />}>
-            <Route index element={dayPicker} />
-            <Route path="create" element={dayPicker} />
-            <Route path="how-it-works" element={<HowItWorksPage />} />
-            <Route path="privacy" element={<Privacy />} />
-            <Route path="feedback" element={<Feedback />} />
-            <Route path="terms-of-service" element={<TermsOfService />} />
-            <Route path="m/:id" element={<Meeting />} />
-            <Route path="signup" element={<Signup />} />
-            <Route path="login" element={<Login />} />
-            <Route path="confirm-link-google-account" element={<ConfirmLinkExternalCalendar provider="google" />} />
-            <Route path="confirm-link-microsoft-account" element={<ConfirmLinkExternalCalendar provider="microsoft" />} />
-            <Route path="forgot-password" element={<ForgotPassword />} />
-            <Route path="confirm-password-reset" element={<ConfirmPasswordReset />} />
-            <Route path="verify-email" element={<VerifyEmail />} />
-            <Route path="error" element={<ErrorPage />} />
-            <Route path="me">
-              <Route index element={<Profile />} />
-              <Route path="settings" element={<Settings />} />
+        <WaitForServerInfo>
+          <Routes>
+            <Route path="/" element={<AppRoot />}>
+              <Route index element={dayPicker} />
+              <Route path="create" element={dayPicker} />
+              <Route path="privacy" element={<Privacy />} />
+              <Route path="feedback" element={<Feedback />} />
+              <Route path="terms-of-service" element={<TermsOfService />} />
+              <Route path="m/:id" element={<Meeting />} />
+              <Route path="signup" element={<Signup />} />
+              <Route path="login" element={<Login />} />
+              <Route path="confirm-link-google-account" element={<ConfirmLinkExternalCalendar provider="google" />} />
+              <Route path="confirm-link-microsoft-account" element={<ConfirmLinkExternalCalendar provider="microsoft" />} />
+              <Route path="forgot-password" element={<ForgotPassword />} />
+              <Route path="confirm-password-reset" element={<ConfirmPasswordReset />} />
+              <Route path="verify-email" element={<VerifyEmail />} />
+              <Route path="error" element={<ErrorPage />} />
+              <Route path="me">
+                <Route index element={<Profile />} />
+                <Route path="settings" element={<Settings />} />
+              </Route>
+              <Route path="*" element={<h3 className="vw-simple-heading">Page not found</h3>} />
             </Route>
-            {/* TODO: use custom 404 page */}
-            <Route path="*" element={<h3>Page not found</h3>} />
-          </Route>
-        </Routes>
+          </Routes>
+        </WaitForServerInfo>
       </HistoryProvider>
     </BrowserRouter>
   );
 }
 
-function BrandWithLogo({onClick}: {onClick: () => void}) {
-  return (
-    <LinkContainer to="/" onClick={onClick}>
-      <Navbar.Brand>
-        <div className="d-inline-block me-1" style={{
-          height: '1.5em',
-          width: '1.5em',
-          // There's a bit of empty space at the top of the image
-          position: 'relative',
-          top: '-0.1em',
-        }}>
-          <Logo />
-        </div>
-        CabbageMeet
-      </Navbar.Brand>
-    </LinkContainer>
-  );
-}
-
 function AppRoot() {
-  // Eager fetching: these data will be needed later by other parts of the app,
-  // so load them now.
+  useExtractTokenFromQueryParams();
   useGetSelfInfoIfTokenIsPresent();
-  useGetServerInfoQuery();
 
   const [showToggle, setShowToggle] = useState(false);
-  const tokenIsInURL = useExtractTokenFromQueryParams();
-  if (tokenIsInURL) {
-    // Don't make any requests yet until the token has been saved into
-    // LocalStorage and stored in the Redux slice.
-    // Otherwise the requests will be prematurely unauthenticated.
-    return null;
-  }
-  const onClickToggle = () => setShowToggle(true);
+  const [theme, setTheme] = useStoredTheme();
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const onShowToggle = () => setShowToggle(true);
   const onHideToggle = () => setShowToggle(false);
+
+  const themeIcon = useMemo(() => {
+    return theme === 'light'
+      ? 'https://www.svgrepo.com/show/432507/light-mode.svg'
+      : 'https://i.postimg.cc/63Mr6Vgt/output-onlinepngtools-3.png';
+  }, [theme]);
+
   return (
-    <div className="App d-flex flex-column">
-      <Navbar expand="md" className="mt-3 mb-5">
-        <Container className="app-main-container custom-navbar-container">
-          <BrandWithLogo onClick={onHideToggle} />
+    <div className="App vw-app-shell d-flex flex-column">
+      <Navbar expand="md" className="custom-navbar vw-navbar" sticky="top">
+        <Container className="custom-navbar-container">
           <Navbar.Toggle
             aria-controls="app-navbar-nav"
             className="custom-navbar-toggle"
-            onClick={onClickToggle}
+            onClick={onShowToggle}
           />
+          <BrandWithLogo onClick={onHideToggle} />
+          <Navbar.Collapse className="justify-content-end d-none d-md-flex">
+            <Nav className="ms-auto align-items-center">
+              <HeaderLinks onClick={onHideToggle} />
+              <button
+                type="button"
+                className="btn vw-theme-toggle ms-md-3"
+                onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+              >
+                <img src={themeIcon} alt={theme === 'light' ? 'Light mode icon' : 'Dark mode icon'} />
+              </button>
+            </Nav>
+          </Navbar.Collapse>
+
           <Navbar.Offcanvas
             id="app-navbar-nav"
             aria-labelledby="app-navbar-offcanvas-label"
@@ -134,84 +134,128 @@ function AppRoot() {
               </Offcanvas.Title>
             </Offcanvas.Header>
             <Offcanvas.Body>
-              <div className="px-3"><hr className="mt-0 mb-4" /></div>
+              <div className="px-3">
+                <hr className="mt-0 mb-4 vw-line" />
+              </div>
               <Nav className="ms-auto">
                 <HeaderLinks onClick={onHideToggle} />
+                <button
+                  type="button"
+                  className="btn vw-theme-toggle mt-3 d-inline-flex d-md-none"
+                  onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                  aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
+                >
+                  <img src={themeIcon} alt={theme === 'light' ? 'Light mode icon' : 'Dark mode icon'} />
+                </button>
               </Nav>
             </Offcanvas.Body>
           </Navbar.Offcanvas>
         </Container>
       </Navbar>
-      <main className="container app-main-container flex-grow-1 d-flex flex-column">
+
+      <main className="container app-main-container flex-grow-1 d-flex flex-column vw-main">
         <Outlet />
       </main>
+
       <Footer />
       <BottomOverlayFiller />
     </div>
   );
 }
 
+function BrandWithLogo({onClick}: {onClick: () => void}) {
+  return (
+    <LinkContainer to="/" onClick={onClick}>
+      <Navbar.Brand className="vw-brand">
+        Vader: Whiteout
+      </Navbar.Brand>
+    </LinkContainer>
+  );
+}
+
 function HeaderLinks({onClick}: {onClick: () => void}) {
-  // assume that user info will be successfully fetched if token is present (optimistic)
   const isOrWillBeLoggedIn = useAppSelector(selectTokenIsPresent);
-  const links = [{to: '/', desc: 'Meet'}];
+
+  const links = [{to: '/', desc: 'Schedule'}];
   if (isOrWillBeLoggedIn) {
-    links.push({to: '/me', desc: 'Profile'});
+    links.push({to: '/me', desc: 'Crew'});
   } else {
     links.push(
-      {to: "/how-it-works", desc: "How it works"},
       {to: '/signup', desc: 'Sign up'},
       {to: '/login', desc: 'Login'},
     );
   }
+
   const offcanvasOnlyLinks = [
     {to: '/privacy', desc: 'Privacy'},
     {to: '/feedback', desc: 'Feedback'},
   ];
+
   const linkProps = {
     className: 'header-link',
     activeClassName: 'header-link_active',
   };
+
   const offcanvasOnlyLinksProps = {
     className: 'header-link d-block d-md-none',
     activeClassName: 'header-link_active d-block d-md-none',
   };
+
   return (
     <>
-      {
-        links.map(lnk => (
-          <LinkContainer
-            to={lnk.to}
-            key={lnk.to}
-            {...linkProps}
-          >
-            <Nav.Link onClick={onClick}>{lnk.desc}</Nav.Link>
-          </LinkContainer>
-        ))
-      }
-      {
-        offcanvasOnlyLinks.map(lnk => (
-          <LinkContainer
-            to={lnk.to}
-            key={lnk.to}
-            onClick={onClick}
-            {...offcanvasOnlyLinksProps}
-          >
-            <Nav.Link>{lnk.desc}</Nav.Link>
-          </LinkContainer>
-        ))
-      }
+      {links.map((lnk) => (
+        <LinkContainer
+          to={lnk.to}
+          key={lnk.to}
+          {...linkProps}
+        >
+          <Nav.Link onClick={onClick}>{lnk.desc}</Nav.Link>
+        </LinkContainer>
+      ))}
+
+      {offcanvasOnlyLinks.map((lnk) => (
+        <LinkContainer
+          to={lnk.to}
+          key={lnk.to}
+          onClick={onClick}
+          {...offcanvasOnlyLinksProps}
+        >
+          <Nav.Link>{lnk.desc}</Nav.Link>
+        </LinkContainer>
+      ))}
     </>
   );
 }
 
 function Footer() {
   return (
-    <footer className="d-none d-md-flex align-items-center justify-content-center border-top mt-md-5">
-      <Link to="/privacy" >Privacy</Link>
+    <footer className="vw-footer d-none d-md-flex align-items-center justify-content-center border-top mt-md-5">
+      <span>Internal production scheduler</span>
+      <Link to="/privacy">Privacy</Link>
       <Link to="/feedback">Feedback</Link>
-      <Link to="/terms-of-service">Terms of Service</Link>
-      <a href="https://github.com/maxerenberg/cabbagemeet">GitHub</a>
+      <Link to="/terms-of-service">Terms</Link>
+      <a href={SOURCE_URL} target="_blank" rel="noreferrer">Source</a>
     </footer>
   );
+}
+
+function useStoredTheme(): [string, (theme: string) => void] {
+  const getInitial = () => {
+    try {
+      return localStorage.getItem('theme') === 'light' ? 'light' : 'dark';
+    } catch {
+      return 'dark';
+    }
+  };
+
+  const [theme, setThemeState] = useState<string>(getInitial);
+
+  const setTheme = (next: string) => {
+    setThemeState(next);
+    try {
+      localStorage.setItem('theme', next);
+    } catch {}
+  };
+
+  return [theme, setTheme];
 }
