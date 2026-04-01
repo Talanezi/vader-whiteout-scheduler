@@ -15,7 +15,7 @@ export default function MeetingNamePrompt({
   return (
     <Form.Group className="d-flex align-items-center">
       <Form.Control
-        placeholder="Name your meeting"
+        placeholder="Fight rehearsal, beach shoot, table read, costume fitting..."
         className="create-meeting-question form-text-input flex-grow-1"
         autoFocus
         value={meetingName}
@@ -32,7 +32,7 @@ export default function MeetingNamePrompt({
       </ButtonWithSpinner>
       <BottomOverlay>
         <ButtonWithSpinner
-          className="btn btn-light ms-auto create-meeting-button"
+          className="btn btn-primary ms-auto create-meeting-button"
           tabIndex={-1}
           type="submit"
           disabled={meetingName === '' || isLoading}
