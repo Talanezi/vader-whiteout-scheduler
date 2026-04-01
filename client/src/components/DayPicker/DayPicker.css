@@ -1,19 +1,111 @@
+.vw-daypicker-page {
+  display: grid;
+  gap: 1rem;
+}
+
+.vw-section-card {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(16px, 2.5vw, 28px);
+  background: var(--card);
+  box-shadow: var(--vw-shadow-soft);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: hidden;
+  position: relative;
+}
+
+.vw-daypicker-intro::before,
+.vw-calendar-shell::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 240px at 12% 0%, rgba(120,200,255,.08), transparent 60%),
+    radial-gradient(900px 240px at 100% 0%, rgba(120,200,255,.04), transparent 58%);
+}
+
+.vw-copy-block {
+  max-width: 780px;
+}
+
+.vw-kicker {
+  text-transform: uppercase;
+  letter-spacing: .28em;
+  color: var(--mute);
+  font-size: .8rem;
+  margin-bottom: .5rem;
+}
+
+.vw-page-title {
+  margin: 0;
+  font-family: 'Crimson Text', serif;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: clamp(1.7rem, 2.5vw, 2.4rem);
+  line-height: 1.06;
+}
+
+.vw-page-note {
+  margin: .7rem 0 0;
+  color: var(--mute);
+  max-width: 62ch;
+}
+
+.vw-calendar-topline {
+  display: flex;
+  gap: .65rem;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.vw-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  padding: 7px 11px;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: .85rem;
+  background: rgba(255,255,255,.03);
+}
+
+html[data-theme="light"] .vw-chip {
+  background: rgba(0,0,0,.03);
+}
+
+.vw-calendar-wrap {
+  margin-top: .25rem;
+}
+
 .daypicker-calendar {
   flex-grow: 1;
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  gap: .1rem;
 }
 
 .daypicker-dayofweek-cell {
   text-align: center;
-  padding-bottom: 0.4rem;
-  border-bottom: 1px solid lightgray;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--mute);
+  font-size: .88rem;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  font-weight: 700;
 }
 
 .daypicker-calendar-cell-month-indicator {
-  font-size: 0.75em;
+  font-size: 0.72em;
   text-transform: uppercase;
   color: var(--custom-primary-strong);
+  letter-spacing: .10em;
+  font-weight: 800;
 }
 
 .daypicker-calendar__cell {
@@ -27,21 +119,24 @@
 .daypicker-calendar__cell__button {
   width: 3em;
   height: 3em;
-  border-radius: 50%;
+  border-radius: 999px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  transition: .18s ease;
+  border: 1px solid transparent;
+  font-weight: 700;
 }
 
-/* media-breakpoint-down(md) */
 @media (max-width: 767.98px) {
   .daypicker-calendar__cell {
     height: 4em;
   }
+
   .daypicker-calendar__cell__button {
-    width: 2em;
-    height: 2em;
+    width: 2.25em;
+    height: 2.25em;
   }
 }
 
@@ -50,10 +145,30 @@
 }
 
 .daypicker-calendar__cell__button.selected {
-  background-color: var(--custom-primary);
-  color: var(--custom-primary-contrast);
+  background-color: #ffffff;
+  color: #0b0b0b;
+  border-color: #ffffff;
+  box-shadow: 0 10px 28px rgba(255,255,255,.14);
+}
+
+html[data-theme="light"] .daypicker-calendar__cell__button.selected {
+  background-color: #111111;
+  color: #ffffff;
+  border-color: #111111;
+  box-shadow: 0 10px 28px rgba(0,0,0,.10);
+}
+
+.daypicker-calendar__cell__button.unselected {
+  color: var(--ink);
+  background: rgba(255,255,255,.02);
+  border-color: rgba(255,255,255,0);
+}
+
+html[data-theme="light"] .daypicker-calendar__cell__button.unselected {
+  background: rgba(0,0,0,.02);
 }
 
 .daypicker-calendar__cell__button.unselected:hover {
-  background-color: lightgray;
+  background-color: rgba(120, 215, 255, 0.12);
+  border-color: var(--line);
 }
