@@ -3,7 +3,6 @@ import Form from 'react-bootstrap/Form';
 import { to12HourClock, tzAbbr } from 'utils/dates.utils';
 import { range } from 'utils/arrays.utils';
 
-// startTime and endTime use a 24-hour clock [0, 23]
 export default function MeetingTimesPrompt({
   startTime,
   setStartTime,
@@ -17,19 +16,19 @@ export default function MeetingTimesPrompt({
 }) {
   return (
     <fieldset className="create-meeting-form-group">
-      <legend className="create-meeting-question">Between which times would you like to meet?</legend>
+      <legend className="create-meeting-question">What time window should people consider?</legend>
       <div className="d-flex align-items-center">
         <TimePicker
           hour={startTime}
           setHour={setStartTime}
-          label="Minimum start time"
+          label="Earliest realistic start"
           popupID="start-time-popup"
         />
         <p className="py-0 px-3 m-0">to</p>
         <TimePicker
           hour={endTime}
           setHour={setEndTime}
-          label="Maximum end time"
+          label="Latest realistic end"
           popupID="end-time-popup"
         />
         <p className="py-0 ps-3 m-0">{tzAbbr}</p>
@@ -39,7 +38,7 @@ export default function MeetingTimesPrompt({
 }
 
 function TimePicker({
-  hour: hour24,  // [0, 23]
+  hour: hour24,
   setHour: setHour24,
   label,
   popupID,
@@ -51,101 +50,66 @@ function TimePicker({
 }) {
   const [show, setShow] = useState(false);
   const inputOrPickerClicked = useRef(false);
+
   useEffect(() => {
     const listener = () => {
       if (inputOrPickerClicked.current) {
-        // Click happened inside of the input or picker
-        // Open the picker or keep it open
         setShow(true);
         inputOrPickerClicked.current = false;
       } else {
-        // Click happened outside of the input or picker
-        // Close the picker if it was open
         setShow(false);
       }
     };
-    document.body.addEventListener('click', listener);
-    return () => {
-      document.body.removeEventListener('click', listener);
-    };
+    document.addEventListener('click', listener);
+    return () => document.removeEventListener('click', listener);
   }, []);
-  // Use useRef instead of useState because the setHour12 callback would sometimes
-  // use a stale value
-  const hourSuffix = useRef<'am' | 'pm'>(hour24 < 12 ? 'am' : 'pm');
-  const setHour12 = (hour12: number) => {
-    if (hourSuffix.current === 'am') {
-      setHour24(hour12 === 12 ? 0 : hour12);
-    } else {
-      setHour24(hour12 === 12 ? 12 : hour12 + 12);
-    }
-  };
-  const hour12 = to12HourClock(hour24);  // [1, 12]
-  const setHourSuffix = (suffix: 'am' | 'pm') => {
-    hourSuffix.current = suffix;
-    // update the parent's state
-    setHour12(hour12);
-  };
-  const text = hour12 + ' ' + hourSuffix.current;
-  // TODO: support keyboard controls
+
   return (
     <div className="position-relative">
       <Form.Control
-        value={text}
         readOnly
-        onClick={() => { inputOrPickerClicked.current = true; }}
-        role="combobox"
-        aria-expanded={show ? 'true' : 'false'}
         aria-label={label}
-        aria-haspopup="dialog"
-        aria-controls={popupID}
+        value={to12HourClock(hour24)}
+        className="form-text-input"
+        onClick={() => {
+          inputOrPickerClicked.current = true;
+        }}
       />
-      <div
-        // Make the picker grow upwards (via bottom: 0) instead of downwards so that
-        // the bottom of the picker isn't touching the bottom of the viewport
-        className={"position-absolute bottom-0 start-0 meeting-times-picker" + (show ? '' : ' d-none')}
-        onClick={() => { inputOrPickerClicked.current = true; }}
-        role="dialog"
-        id={popupID}
-      >
-        <div className="meeting-times-picker-top">{text}</div>
-        <div className="d-flex">
-          {/* TODO: use radio buttons instead (with appearance: none) */}
-          <ol
-            className="flex-grow-1 meeting-times-picker-left"
-            role="listbox"
-            aria-label="Pick an hour"
-          >
-            {range(1, 13).map(i => (
+      {show && (
+        <div
+          className="meeting-times-picker position-absolute mt-2 d-flex"
+          id={popupID}
+          onClick={() => {
+            inputOrPickerClicked.current = true;
+          }}
+        >
+          <div className="meeting-times-picker-top w-100 position-absolute d-none">
+            {label}
+          </div>
+          <ul className="meeting-times-picker-left">
+            {range(0, 24).map(hour => (
               <li
-                key={i}
-                className={i === hour12 ? 'selected' : ''}
-                onClick={() => setHour12(i)}
-                role="option"
-                aria-selected={i === hour12}
+                key={hour}
+                className={hour === hour24 ? 'selected' : ''}
+                onClick={() => setHour24(hour)}
               >
-                {String(i).padStart(2, '0')}
+                {String(hour).padStart(2, '0')}
               </li>
             ))}
-          </ol>
-          <ol
-            className="flex-grow-1 meeting-times-picker-right"
-            role="listbox"
-            aria-label="Pick AM or PM"
-          >
-            {(['am', 'pm'] as const).map(suffix => (
+          </ul>
+          <ul className="meeting-times-picker-right">
+            {range(0, 24).map(hour => (
               <li
-                key={suffix}
-                className={suffix === hourSuffix.current ? 'selected' : ''}
-                onClick={() => setHourSuffix(suffix)}
-                role="option"
-                aria-selected={suffix === hourSuffix.current}
+                key={hour}
+                className={hour === hour24 ? 'selected' : ''}
+                onClick={() => setHour24(hour)}
               >
-                {suffix}
+                {to12HourClock(hour)}
               </li>
             ))}
-          </ol>
+          </ul>
         </div>
-      </div>
+      )}
     </div>
   );
 }
