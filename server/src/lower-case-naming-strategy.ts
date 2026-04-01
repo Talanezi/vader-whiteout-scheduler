@@ -54,18 +54,6 @@ export default class LowerCaseNamingStrategy extends DefaultNamingStrategy {
       .toLowerCase();
   }
 
-  classTableInheritanceParentColumnName(
-    parentTableName: string,
-    parentTableIdPropertyName: string,
-  ): string {
-    return super
-      .classTableInheritanceParentColumnName(
-        parentTableName,
-        parentTableIdPropertyName,
-      )
-      .toLowerCase();
-  }
-
   eagerJoinRelationAlias(alias: string, propertyPath: string): string {
     return `${alias}_${propertyPath.replace(/\./g, '_')}`.toLowerCase();
   }
