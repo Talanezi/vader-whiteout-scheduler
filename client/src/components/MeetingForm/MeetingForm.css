@@ -1,13 +1,68 @@
+.vw-form-shell {
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: clamp(18px, 2.5vw, 30px);
+  background: var(--card);
+  box-shadow: var(--vw-shadow-soft);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  overflow: hidden;
+  position: relative;
+}
+
+.vw-form-shell::before {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  pointer-events: none;
+  background:
+    radial-gradient(1000px 260px at 12% 0%, rgba(120,200,255,.08), transparent 60%),
+    radial-gradient(900px 260px at 100% 0%, rgba(120,200,255,.04), transparent 58%);
+}
+
+.vw-form-header {
+  margin-bottom: 2.25rem;
+  position: relative;
+  z-index: 1;
+}
+
+.vw-form-title {
+  margin: 0;
+  font-family: 'Crimson Text', serif;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  font-size: clamp(1.5rem, 2.2vw, 2rem);
+}
+
+.vw-form-note {
+  margin: .6rem 0 0;
+  color: var(--mute);
+  max-width: 60ch;
+}
+
+.vw-kicker {
+  text-transform: uppercase;
+  letter-spacing: .28em;
+  color: var(--mute);
+  font-size: .8rem;
+  margin-bottom: .45rem;
+}
+
 .create-meeting-form-group {
-  margin-top: 4rem;
+  margin-top: 2.75rem;
+  position: relative;
+  z-index: 1;
 }
 
 .edit-meeting .create-meeting-form-group {
-  margin-top: 3rem;
+  margin-top: 2.25rem;
 }
 
 .create-meeting-question {
-  font-size: 1.3em;
+  font-size: 1.18rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
 .create-meeting-button {
@@ -15,40 +70,54 @@
 }
 
 .meeting-times-picker {
-  border: 1px solid lightgray;
-  box-shadow: 0 0 5px gray;
-  background-color: white;  /* TODO: dark theme */
-  border-radius: 0.375rem;
-  min-width: 10em;
+  border: 1px solid var(--line);
+  box-shadow: var(--vw-shadow-soft);
+  background-color: var(--card2);
+  border-radius: 0.75rem;
+  min-width: 14em;
+  overflow: hidden;
+  z-index: 30;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
 }
 
 .meeting-times-picker-top {
   padding: 0.375rem 0.75rem;
-  border-bottom: 1px solid lightgray;
+  border-bottom: 1px solid var(--line);
 }
 
-.meeting-times-picker-left, .meeting-times-picker-right {
+.meeting-times-picker-left,
+.meeting-times-picker-right {
   list-style: none;
   padding: 0;
   margin: 0;
+  color: var(--ink);
 }
 
 .meeting-times-picker-left {
-  border-right: 1px solid lightgray;
+  border-right: 1px solid var(--line);
   max-height: 12em;
-  overflow-y: scroll;
+  overflow-y: auto;
+}
+
+.meeting-times-picker-right {
+  max-height: 12em;
+  overflow-y: auto;
 }
 
 :is(.meeting-times-picker-left, .meeting-times-picker-right) > li {
-  padding: 0.2rem 1.2rem;
+  padding: 0.35rem 1rem;
   text-align: center;
+  transition: .15s ease;
 }
 
 :is(.meeting-times-picker-left, .meeting-times-picker-right) > li.selected {
-  background-color: lightgray;
+  background-color: rgba(120, 215, 255, 0.18);
+  color: var(--ink);
+  font-weight: 800;
 }
 
 :is(.meeting-times-picker-left, .meeting-times-picker-right) > li:hover {
-  background-color: lightgray;
+  background-color: rgba(120, 215, 255, 0.12);
   cursor: pointer;
 }
