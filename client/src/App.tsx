@@ -45,7 +45,7 @@ export default function App() {
   const dayPicker = <DayPicker />;
 
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/scheduler">
       <HistoryProvider>
         <WaitForServerInfo>
           <Routes>
