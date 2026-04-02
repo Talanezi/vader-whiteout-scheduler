@@ -20,7 +20,8 @@ export default function MeetingForm() {
 
   const dispatch = useAppDispatch();
   const dates = useAppSelector(selectSelectedDates);
-  const [createMeeting, { data, isLoading, isSuccess, error }] = useCreateMeetingMutation();
+  const [createMeeting, { data, isLoading, isSuccess, error }] =
+    useCreateMeetingMutation();
   const navigate = useNavigate();
 
   useSetTitle('Create schedule');
@@ -38,7 +39,10 @@ export default function MeetingForm() {
 
   const onSubmit: React.FormEventHandler<HTMLFormElement> = (ev) => {
     ev.preventDefault();
-    if (meetingName === '') return;
+
+    if (meetingName === '') {
+      return;
+    }
 
     createMeeting({
       name: meetingName,
@@ -77,41 +81,6 @@ export default function MeetingForm() {
         setMeetingAbout={setMeetingAbout}
       />
 
-      <MeetingTimesPrompt
-        startTime={startTime}
-        setStartTime={setStartTime}
-        endTime={endTime}
-        setEndTime={setEndTime}
-      />
-    </Form>
-  );
-}    if (meetingName === '') {
-      // TODO: use form validation to provide visual feedback
-      return;
-    }
-    createMeeting({
-      name: meetingName,
-      about: meetingAbout,
-      timezone: ianaTzName,
-      minStartHour: startTime,
-      maxEndHour: endTime,
-      tentativeDates: Object.keys(dates),
-    });
-  };
-  return (
-    <Form className="create-meeting-page" onSubmit={onSubmit}>
-      <MeetingNamePrompt
-        meetingName={meetingName}
-        setMeetingName={setMeetingName}
-        isLoading={isLoading}
-      />
-      {error && (
-        <p className="text-danger text-center mt-3">An error occurred: {getReqErrorMessage(error)}</p>
-      )}
-      <MeetingAboutPrompt
-        meetingAbout={meetingAbout}
-        setMeetingAbout={setMeetingAbout}
-      />
       <MeetingTimesPrompt
         startTime={startTime}
         setStartTime={setStartTime}
