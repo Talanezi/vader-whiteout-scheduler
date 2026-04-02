@@ -1,3 +1,4 @@
+cat > /workspaces/vader-whiteout-scheduler/client/src/components/availabilities/WeeklyTimeViewPicker.tsx <<'EOF'
 import React, { useMemo, useReducer } from 'react';
 import { LeftArrow as SVGLeftArrow, RightArrow as SVGRightArrow } from 'components/Arrows';
 import {
@@ -248,3 +249,4 @@ const MeetingDaysRightArrow = React.memo(function MeetingDaysRightArrow({
     </div>
   );
 });
+EOF
