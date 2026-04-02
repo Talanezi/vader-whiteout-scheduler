@@ -1,7 +1,99 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Form from 'react-bootstrap/Form';
-import { to12HourClock, tzAbbr } from 'utils/dates.utils';
-import { range } from 'utils/arrays.utils';
+import { tzAbbr } from 'utils/dates.utils';
+
+function toLabel(hour24: number) {
+  const normalized = ((hour24 % 24) + 24) % 24;
+  const suffix = normalized >= 12 ? 'pm' : 'am';
+  const hour12 = normalized % 12 === 0 ? 12 : normalized % 12;
+  return `${hour12} ${suffix}`;
+}
+
+function toPieces(hour24: number) {
+  const normalized = ((hour24 % 24) + 24) % 24;
+  return {
+    hour12: normalized % 12 === 0 ? 12 : normalized % 12,
+    meridiem: normalized >= 12 ? 'pm' : 'am',
+  } as const;
+}
+
+function fromPieces(hour12: number, meridiem: 'am' | 'pm') {
+  if (meridiem === 'am') {
+    return hour12 === 12 ? 0 : hour12;
+  }
+  return hour12 === 12 ? 12 : hour12 + 12;
+}
+
+function TimeDropdown({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (next: number) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  const { hour12, meridiem } = useMemo(() => toPieces(value), [value]);
+
+  useEffect(() => {
+    const onDocClick = (ev: MouseEvent) => {
+      if (!rootRef.current) return;
+      if (!rootRef.current.contains(ev.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, []);
+
+  return (
+    <div className="vw-time-dropdown" ref={rootRef}>
+      <div className="vw-time-dropdown-label">{label}</div>
+
+      <button
+        type="button"
+        className="vw-time-trigger"
+        onClick={() => setOpen(prev => !prev)}
+      >
+        {toLabel(value)}
+      </button>
+
+      {open && (
+        <div className="vw-time-panel">
+          <div className="vw-time-panel-top">{toLabel(value)}</div>
+          <div className="vw-time-panel-body">
+            <ul className="vw-time-hours" role="listbox" aria-label={`${label} hour`}>
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((h) => (
+                <li
+                  key={h}
+                  className={h === hour12 ? 'selected' : ''}
+                  onClick={() => onChange(fromPieces(h, meridiem))}
+                >
+                  {String(h).padStart(2, '0')}
+                </li>
+              ))}
+            </ul>
+
+            <ul className="vw-time-meridiem" role="listbox" aria-label={`${label} am pm`}>
+              {(['am', 'pm'] as const).map((m) => (
+                <li
+                  key={m}
+                  className={m === meridiem ? 'selected' : ''}
+                  onClick={() => onChange(fromPieces(hour12, m))}
+                >
+                  {m}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function MeetingTimesPrompt({
   startTime,
@@ -9,107 +101,31 @@ export default function MeetingTimesPrompt({
   endTime,
   setEndTime,
 }: {
-  startTime: number,
-  setStartTime: (time: number) => void,
-  endTime: number,
-  setEndTime: (time: number) => void,
+  startTime: number;
+  setStartTime: (time: number) => void;
+  endTime: number;
+  setEndTime: (time: number) => void;
 }) {
+  const timezoneText = tzAbbr();
+
   return (
-    <fieldset className="create-meeting-form-group">
-      <legend className="create-meeting-question">What time window should people consider?</legend>
-      <div className="d-flex align-items-center">
-        <TimePicker
-          hour={startTime}
-          setHour={setStartTime}
-          label="Earliest realistic start"
-          popupID="start-time-popup"
-        />
-        <p className="py-0 px-3 m-0">to</p>
-        <TimePicker
-          hour={endTime}
-          setHour={setEndTime}
-          label="Latest realistic end"
-          popupID="end-time-popup"
-        />
-        <p className="py-0 ps-3 m-0">{tzAbbr}</p>
+    <Form.Group className="create-meeting-form-group">
+      <Form.Label className="create-meeting-question">
+        What time window should people consider?
+      </Form.Label>
+
+      <div className="vw-time-range-row">
+        <TimeDropdown label="Start" value={startTime} onChange={setStartTime} />
+        <div className="vw-time-range-sep">to</div>
+        <TimeDropdown label="End" value={endTime} onChange={setEndTime} />
+        <div className="vw-timezone-pill">{timezoneText}</div>
       </div>
-    </fieldset>
-  );
-}
 
-function TimePicker({
-  hour: hour24,
-  setHour: setHour24,
-  label,
-  popupID,
-}: {
-  hour: number,
-  setHour: (val: number) => void,
-  label: string,
-  popupID: string,
-}) {
-  const [show, setShow] = useState(false);
-  const inputOrPickerClicked = useRef(false);
-
-  useEffect(() => {
-    const listener = () => {
-      if (inputOrPickerClicked.current) {
-        setShow(true);
-        inputOrPickerClicked.current = false;
-      } else {
-        setShow(false);
-      }
-    };
-    document.addEventListener('click', listener);
-    return () => document.removeEventListener('click', listener);
-  }, []);
-
-  return (
-    <div className="position-relative">
-      <Form.Control
-        readOnly
-        aria-label={label}
-        value={to12HourClock(hour24)}
-        className="form-text-input"
-        onClick={() => {
-          inputOrPickerClicked.current = true;
-        }}
-      />
-      {show && (
-        <div
-          className="meeting-times-picker position-absolute mt-2 d-flex"
-          id={popupID}
-          onClick={() => {
-            inputOrPickerClicked.current = true;
-          }}
-        >
-          <div className="meeting-times-picker-top w-100 position-absolute d-none">
-            {label}
-          </div>
-          <ul className="meeting-times-picker-left">
-            {range(0, 24).map(hour => (
-              <li
-                key={hour}
-                className={hour === hour24 ? 'selected' : ''}
-                onClick={() => setHour24(hour)}
-              >
-                {String(hour).padStart(2, '0')}
-              </li>
-            ))}
-          </ul>
-          <ul className="meeting-times-picker-right">
-            {range(0, 24).map(hour => (
-              <li
-                key={hour}
-                className={hour === hour24 ? 'selected' : ''}
-                onClick={() => setHour24(hour)}
-              >
-                {to12HourClock(hour)}
-              </li>
-            ))}
-          </ul>
-        </div>
+      {endTime <= startTime && (
+        <p className="text-danger mt-3 mb-0">
+          End time must be later than start time.
+        </p>
       )}
-    </div>
+    </Form.Group>
   );
 }
