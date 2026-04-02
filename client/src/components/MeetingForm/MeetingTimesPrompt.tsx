@@ -1,3 +1,4 @@
+cat > /workspaces/vader-whiteout-scheduler/client/src/components/MeetingForm/MeetingTimesPrompt.tsx <<'EOF'
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import { tzAbbr } from 'utils/dates.utils';
@@ -49,6 +50,19 @@ function TimeDropdown({
     return () => document.removeEventListener('mousedown', onDocClick);
   }, []);
 
+  useEffect(() => {
+    if (!open || !rootRef.current) return;
+
+    const el = rootRef.current;
+    requestAnimationFrame(() => {
+      el.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+        inline: 'nearest',
+      });
+    });
+  }, [open]);
+
   return (
     <div className="vw-time-dropdown" ref={rootRef}>
       <div className="vw-time-dropdown-label">{label}</div>
@@ -58,7 +72,8 @@ function TimeDropdown({
         className="vw-time-trigger"
         onClick={() => setOpen(prev => !prev)}
       >
-        {toLabel(value)}
+        <span className="vw-time-trigger-value">{toLabel(value)}</span>
+        <span className="vw-time-trigger-icon">{open ? '−' : '+'}</span>
       </button>
 
       {open && (
@@ -115,17 +130,23 @@ export default function MeetingTimesPrompt({
       </Form.Label>
 
       <div className="vw-time-range-row">
-        <TimeDropdown label="Start" value={startTime} onChange={setStartTime} />
-        <div className="vw-time-range-sep">to</div>
-        <TimeDropdown label="End" value={endTime} onChange={setEndTime} />
+        <TimeDropdown
+          label="Start"
+          value={startTime}
+          onChange={setStartTime}
+        />
+
+        <div className="vw-time-separator">to</div>
+
+        <TimeDropdown
+          label="End"
+          value={endTime}
+          onChange={setEndTime}
+        />
+
         <div className="vw-timezone-pill">{timezoneText}</div>
       </div>
-
-      {endTime <= startTime && (
-        <p className="text-danger mt-3 mb-0">
-          End time must be later than start time.
-        </p>
-      )}
     </Form.Group>
   );
 }
+EOF
