@@ -368,3 +368,155 @@ html[data-theme="light"] .form-select {
 html[data-theme="light"] .text-danger {
   color: rgb(170, 50, 50) !important;
 }
+:root {
+  --custom-scheduled-cell-color: rgba(122, 191, 255, 0.9);
+  --custom-scheduled-cell-rgb: 122, 191, 255;
+}
+
+.vw-app-shell {
+  min-height: 100vh;
+  background:
+    radial-gradient(1200px 520px at 18% -10%, rgba(120, 200, 255, 0.08), transparent 60%),
+    radial-gradient(1200px 520px at 110% 15%, rgba(120, 200, 255, 0.05), transparent 62%),
+    linear-gradient(180deg, rgb(5, 6, 10), rgb(7, 10, 16));
+}
+
+.vw-navbar {
+  border-bottom: 1px solid rgba(120, 200, 255, 0.14);
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  min-height: 84px;
+}
+
+.vw-navbar-inner {
+  width: min(1200px, calc(100% - 32px));
+  max-width: 1200px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.vw-brand {
+  font-family: 'Crimson Text', serif !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #f4f4f4 !important;
+  font-size: clamp(1.35rem, 3vw, 2.2rem);
+}
+
+.vw-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.vw-nav-link {
+  padding: 10px 14px !important;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  font-weight: 800 !important;
+  letter-spacing: 0.03em;
+  color: #f4f4f4 !important;
+}
+
+.vw-nav-link:hover,
+.vw-nav-link:focus {
+  color: #78d7ff !important;
+}
+
+.vw-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  padding: 0;
+  border-radius: 14px !important;
+  border: 1px solid rgba(120, 200, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  box-shadow: none !important;
+}
+
+.vw-theme-toggle img {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
+.vw-main {
+  padding-top: 24px;
+  padding-bottom: 48px;
+}
+
+.vw-section-card {
+  border: 1px solid rgba(120, 200, 255, 0.14);
+  border-radius: 20px;
+  padding: clamp(16px, 2.5vw, 28px);
+  background: rgba(0, 0, 0, 0.44);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.34);
+  backdrop-filter: blur(18px) saturate(140%);
+  -webkit-backdrop-filter: blur(18px) saturate(140%);
+  margin-bottom: 18px;
+  overflow: visible;
+}
+
+.vw-kicker {
+  text-transform: uppercase;
+  letter-spacing: 0.28em;
+  color: rgba(244, 244, 244, 0.68);
+  font-size: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+.vw-page-title {
+  font-family: 'Crimson Text', serif;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  line-height: 1.04;
+  font-size: clamp(2rem, 5vw, 3.4rem);
+  margin: 0 0 12px;
+}
+
+.vw-page-note {
+  color: rgba(244, 244, 244, 0.72);
+  font-size: 1.08rem;
+  max-width: 920px;
+  margin: 0;
+}
+
+.vw-calendar-shell {
+  overflow: visible !important;
+}
+
+.vw-calendar-wrap {
+  overflow: visible !important;
+}
+
+.vw-simple-heading {
+  color: #f4f4f4;
+  margin-top: 40px;
+  text-align: center;
+}
+
+@media (max-width: 767.98px) {
+  .vw-navbar-inner {
+    gap: 12px;
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .vw-nav-links {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .vw-nav-link {
+    padding-inline: 10px !important;
+  }
+}
