@@ -1,123 +1,182 @@
-.vw-form-shell {
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  padding: clamp(18px, 2.5vw, 30px);
-  background: var(--card);
-  box-shadow: var(--vw-shadow-soft);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-  overflow: hidden;
-  position: relative;
-}
-
-.vw-form-shell::before {
-  content: "";
-  position: absolute;
-  inset: -1px;
-  pointer-events: none;
-  background:
-    radial-gradient(1000px 260px at 12% 0%, rgba(120,200,255,.08), transparent 60%),
-    radial-gradient(900px 260px at 100% 0%, rgba(120,200,255,.04), transparent 58%);
-}
-
-.vw-form-header {
-  margin-bottom: 2.25rem;
-  position: relative;
-  z-index: 1;
-}
-
-.vw-form-title {
-  margin: 0;
-  font-family: 'Crimson Text', serif;
-  font-weight: 800;
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  font-size: clamp(1.5rem, 2.2vw, 2rem);
-}
-
-.vw-form-note {
-  margin: .6rem 0 0;
-  color: var(--mute);
-  max-width: 60ch;
-}
-
-.vw-kicker {
-  text-transform: uppercase;
-  letter-spacing: .28em;
-  color: var(--mute);
-  font-size: .8rem;
-  margin-bottom: .45rem;
-}
-
 .create-meeting-form-group {
-  margin-top: 2.75rem;
-  position: relative;
-  z-index: 1;
-}
-
-.edit-meeting .create-meeting-form-group {
   margin-top: 2.25rem;
 }
 
+.edit-meeting .create-meeting-form-group {
+  margin-top: 2rem;
+}
+
 .create-meeting-question {
-  font-size: 1.18rem;
-  font-weight: 700;
-  color: var(--ink);
+  display: block;
+  margin-bottom: 0.9rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--custom-normal-text-color);
 }
 
 .create-meeting-button {
   min-width: 8em;
 }
 
-.meeting-times-picker {
-  border: 1px solid var(--line);
-  box-shadow: var(--vw-shadow-soft);
-  background-color: var(--card2);
-  border-radius: 0.75rem;
-  min-width: 14em;
-  overflow: hidden;
+.vw-form-shell {
+  position: relative;
+  overflow: visible !important;
+}
+
+.vw-form-header {
+  margin-bottom: 1rem;
+}
+
+.vw-form-title {
+  font-family: 'Crimson Text', serif;
+  font-size: clamp(2rem, 4vw, 3rem);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.vw-form-note {
+  margin: 0;
+  color: var(--mute, rgba(240, 240, 244, 0.72));
+  font-size: 1.05rem;
+}
+
+.vw-time-range-row {
+  position: relative;
   z-index: 30;
-  backdrop-filter: blur(16px) saturate(140%);
-  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  display: flex;
+  gap: 1.1rem;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  overflow: visible !important;
 }
 
-.meeting-times-picker-top {
-  padding: 0.375rem 0.75rem;
-  border-bottom: 1px solid var(--line);
+.vw-time-range-sep {
+  font-size: 1.1rem;
+  font-weight: 700;
+  padding-bottom: 0.85rem;
+  color: var(--custom-normal-text-color);
 }
 
-.meeting-times-picker-left,
-.meeting-times-picker-right {
+.vw-timezone-pill {
+  padding: 0.95rem 1rem;
+  border: 1px solid rgba(120, 200, 255, 0.2);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 5rem;
+  text-align: center;
+  font-weight: 700;
+}
+
+.vw-time-dropdown {
+  position: relative;
+  min-width: 220px;
+  overflow: visible;
+}
+
+.vw-time-dropdown-label {
+  margin-bottom: 0.65rem;
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(240, 240, 244, 0.64);
+}
+
+.vw-time-trigger {
+  width: 100%;
+  border: 1px solid rgba(120, 200, 255, 0.25);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--custom-normal-text-color);
+  font-size: 1.15rem;
+  font-weight: 800;
+  text-align: left;
+  padding: 0.95rem 1rem;
+  transition: 0.2s ease;
+}
+
+.vw-time-trigger:hover {
+  border-color: rgba(120, 215, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(120, 215, 255, 0.08);
+}
+
+.vw-time-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 2000;
+  width: 260px;
+  border: 1px solid rgba(120, 200, 255, 0.22);
+  border-radius: 16px;
+  background: #05060a;
+  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
+  overflow: hidden;
+}
+
+.vw-time-panel-top {
+  padding: 1rem 1rem 0.9rem;
+  border-bottom: 1px solid rgba(120, 200, 255, 0.14);
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--custom-normal-text-color);
+}
+
+.vw-time-panel-body {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  min-height: 220px;
+}
+
+.vw-time-hours,
+.vw-time-meridiem {
   list-style: none;
   padding: 0;
   margin: 0;
-  color: var(--ink);
 }
 
-.meeting-times-picker-left {
-  border-right: 1px solid var(--line);
-  max-height: 12em;
+.vw-time-hours {
+  max-height: 220px;
   overflow-y: auto;
+  border-right: 1px solid rgba(120, 200, 255, 0.14);
 }
 
-.meeting-times-picker-right {
-  max-height: 12em;
-  overflow-y: auto;
-}
-
-:is(.meeting-times-picker-left, .meeting-times-picker-right) > li {
-  padding: 0.35rem 1rem;
+.vw-time-hours li,
+.vw-time-meridiem li {
+  padding: 0.8rem 1rem;
   text-align: center;
-  transition: .15s ease;
-}
-
-:is(.meeting-times-picker-left, .meeting-times-picker-right) > li.selected {
-  background-color: rgba(120, 215, 255, 0.18);
-  color: var(--ink);
-  font-weight: 800;
-}
-
-:is(.meeting-times-picker-left, .meeting-times-picker-right) > li:hover {
-  background-color: rgba(120, 215, 255, 0.12);
+  font-size: 1.05rem;
   cursor: pointer;
+  user-select: none;
+}
+
+.vw-time-hours li:hover,
+.vw-time-meridiem li:hover {
+  background: rgba(120, 215, 255, 0.1);
+}
+
+.vw-time-hours li.selected,
+.vw-time-meridiem li.selected {
+  background: rgba(255, 255, 255, 0.08);
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.vw-time-meridiem {
+  display: flex;
+  flex-direction: column;
+}
+
+.vw-time-meridiem li {
+  text-transform: lowercase;
+}
+
+@media (max-width: 767.98px) {
+  .vw-time-dropdown {
+    min-width: 100%;
+  }
+
+  .vw-time-panel {
+    width: 100%;
+  }
 }
