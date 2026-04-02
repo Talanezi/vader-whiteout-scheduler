@@ -7,27 +7,27 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  border-right: 1px solid rgba(255, 255, 255, 0.98);
+  border-right: 2px solid rgba(255, 255, 255, 0.98);
 }
 
 .weeklyview__bodycell_oddrow::after {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.98);
+  border-bottom: 2px solid rgba(255, 255, 255, 0.98);
 }
 
 .weeklyview__bodycell_firstrow {
-  border-top: 1px solid rgba(255, 255, 255, 0.98);
+  border-top: 2px solid rgba(255, 255, 255, 0.98);
 }
 
 .weeklyview__bodycell_firstcol {
-  border-left: 1px solid rgba(255, 255, 255, 0.98);
+  border-left: 2px solid rgba(255, 255, 255, 0.98);
 }
 
 .weeklyview__bodycell.selected {
-  background-color: rgba(255, 255, 255, 0.14) !important;
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 
 .weeklyview__bodycell.scheduling {
-  background-color: rgba(255, 255, 255, 0.32) !important;
+  background-color: rgba(255, 255, 255, 0.16) !important;
 }
 
 .weeklyview__bodycell:hover::after {
