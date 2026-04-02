@@ -1,46 +1,3 @@
-.create-meeting-form-group {
-  margin-top: 2.25rem;
-}
-
-.edit-meeting .create-meeting-form-group {
-  margin-top: 2rem;
-}
-
-.create-meeting-question {
-  display: block;
-  margin-bottom: 0.9rem;
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--custom-normal-text-color);
-}
-
-.create-meeting-button {
-  min-width: 8em;
-}
-
-.vw-form-shell {
-  position: relative;
-  overflow: visible !important;
-}
-
-.vw-form-header {
-  margin-bottom: 1rem;
-}
-
-.vw-form-title {
-  font-family: 'Crimson Text', serif;
-  font-size: clamp(2rem, 4vw, 3rem);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  margin: 0.25rem 0 0.5rem;
-}
-
-.vw-form-note {
-  margin: 0;
-  color: var(--mute, rgba(240, 240, 244, 0.72));
-  font-size: 1.05rem;
-}
-
 .vw-time-range-row {
   position: relative;
   z-index: 30;
@@ -49,134 +6,36 @@
   align-items: flex-end;
   flex-wrap: wrap;
   overflow: visible !important;
-}
-
-.vw-time-range-sep {
-  font-size: 1.1rem;
-  font-weight: 700;
-  padding-bottom: 0.85rem;
-  color: var(--custom-normal-text-color);
-}
-
-.vw-timezone-pill {
-  padding: 0.95rem 1rem;
-  border: 1px solid rgba(120, 200, 255, 0.2);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  min-width: 5rem;
-  text-align: center;
-  font-weight: 700;
+  margin-bottom: 12rem;
+  padding-bottom: 2rem;
 }
 
 .vw-time-dropdown {
   position: relative;
   min-width: 220px;
   overflow: visible;
-}
-
-.vw-time-dropdown-label {
-  margin-bottom: 0.65rem;
-  font-size: 0.92rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: rgba(240, 240, 244, 0.64);
-}
-
-.vw-time-trigger {
-  width: 100%;
-  border: 1px solid rgba(120, 200, 255, 0.25);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--custom-normal-text-color);
-  font-size: 1.15rem;
-  font-weight: 800;
-  text-align: left;
-  padding: 0.95rem 1rem;
-  transition: 0.2s ease;
-}
-
-.vw-time-trigger:hover {
-  border-color: rgba(120, 215, 255, 0.45);
-  box-shadow: 0 0 0 1px rgba(120, 215, 255, 0.08);
+  margin-bottom: 1rem;
 }
 
 .vw-time-panel {
-  position: absolute;
-  top: calc(100% + 10px);
-  left: 0;
-  z-index: 2000;
-  width: 260px;
-  border: 1px solid rgba(120, 200, 255, 0.22);
-  border-radius: 16px;
-  background: #05060a;
-  box-shadow: 0 18px 60px rgba(0, 0, 0, 0.5);
-  overflow: hidden;
-}
-
-.vw-time-panel-top {
-  padding: 1rem 1rem 0.9rem;
-  border-bottom: 1px solid rgba(120, 200, 255, 0.14);
-  font-size: 1rem;
-  font-weight: 800;
-  color: var(--custom-normal-text-color);
+  margin-top: 0.75rem;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
 }
 
 .vw-time-panel-body {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  min-height: 220px;
-}
-
-.vw-time-hours,
-.vw-time-meridiem {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+  min-height: 260px;
 }
 
 .vw-time-hours {
-  max-height: 220px;
+  max-height: 260px;
   overflow-y: auto;
-  border-right: 1px solid rgba(120, 200, 255, 0.14);
-}
-
-.vw-time-hours li,
-.vw-time-meridiem li {
-  padding: 0.8rem 1rem;
-  text-align: center;
-  font-size: 1.05rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.vw-time-hours li:hover,
-.vw-time-meridiem li:hover {
-  background: rgba(120, 215, 255, 0.1);
-}
-
-.vw-time-hours li.selected,
-.vw-time-meridiem li.selected {
-  background: rgba(255, 255, 255, 0.08);
-  font-weight: 800;
-  color: #ffffff;
 }
 
 .vw-time-meridiem {
   display: flex;
   flex-direction: column;
-}
-
-.vw-time-meridiem li {
-  text-transform: lowercase;
-}
-
-@media (max-width: 767.98px) {
-  .vw-time-dropdown {
-    min-width: 100%;
-  }
-
-  .vw-time-panel {
-    width: 100%;
-  }
+  max-height: 260px;
+  overflow-y: auto;
 }
