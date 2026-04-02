@@ -176,3 +176,20 @@
   color: var(--custom-primary);
   cursor: pointer;
 }
+.weeklyview__local_time_text {
+  display: none !important;
+}
+
+.weeklyview__bodycell.selected {
+  background-color: rgba(var(--custom-primary-rgb), 0.38) !important;
+}
+
+.weeklyview__bodycell.scheduling {
+  background-color: rgba(var(--custom-scheduled-cell-rgb), 0.88) !important;
+}
+
+.weeklyview__bodycell.scheduling .weeklyview__bodycell__text,
+.weeklyview__bodycell.scheduling {
+  color: #ffffff !important;
+  font-weight: 800;
+}
