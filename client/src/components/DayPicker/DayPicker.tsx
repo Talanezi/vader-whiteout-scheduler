@@ -48,7 +48,9 @@ export default function DayPicker() {
           <div className="vw-kicker">Production scheduling</div>
           <h1 className="vw-page-title">Select candidate production dates</h1>
           <p className="vw-page-note">
-            Choose the days your crew could realistically make work, then build a shareable scheduling block for rehearsals, shoots, fittings, scouts, pickups, or reviews.
+            Choose the days your crew could realistically make work, then build a
+            shareable scheduling block for rehearsals, shoots, fittings, scouts,
+            pickups, or reviews.
           </p>
         </div>
 
@@ -62,12 +64,6 @@ export default function DayPicker() {
       </section>
 
       <section className="vw-section-card vw-calendar-shell">
-        <div className="vw-calendar-topline">
-          <span className="vw-chip">Los Angeles time</span>
-          <span className="vw-chip">Crew-facing</span>
-          <span className="vw-chip">Drag-to-select later</span>
-        </div>
-
         <div className="vw-calendar-wrap">
           <Calendar firstVisibleDate={todayString} />
         </div>
