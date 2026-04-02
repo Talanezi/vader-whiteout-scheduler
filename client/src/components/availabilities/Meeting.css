@@ -1,254 +1,426 @@
-cat > /workspaces/vader-whiteout-scheduler/client/src/components/availabilities/Meeting.css <<'EOF'
-@media (min-width: 768px) {
-  .meeting-avl-button {
-    min-width: 8em;
+import React, { ReactElement, useEffect, useMemo } from 'react';
+import { useAppSelector, useAppDispatch } from 'app/hooks';
+import type { PeopleDateTimes, Style } from 'common/types';
+import {
+  useGetCurrentMeetingWithSelector,
+  useGetExternalCalendarEventsIfTokenIsPresent,
+} from 'utils/meetings.hooks';
+import {
+  selectSelMode,
+  selectSelectedTimes,
+  selectHoverUser,
+  setHoverDateTime,
+  addDateTimesAndResetMouse,
+  removeDateTimesAndResetMouse,
+  selectMouseState,
+  notifyMouseUp,
+  notifyMouseDown,
+  notifyMouseEnter,
+} from 'slices/availabilitiesSelection';
+import type { MouseState } from 'slices/availabilitiesSelection';
+import { useToast } from 'components/Toast';
+import { flatGridCoords } from 'utils/arrays.utils';
+import { addDaysToDateString, customToISOString, roundDownDateTimeStr } from 'utils/dates.utils';
+import { assert, assertIsNever } from 'utils/misc.utils';
+import { selectCurrentMeetingID } from 'slices/currentMeeting';
+import {
+  ExternalEventInfoWithNumCols,
+  calculateExternalEventInfoColumns,
+  calculateTopOffsetAndHeightOfExternalEventBox,
+} from './MeetingGridBodyCells.helpers';
+
+type DateTimePeople = {
+  [dateTime: string]: string[];
+};
+
+function createDateTimePeople(availabilities: PeopleDateTimes): DateTimePeople {
+  const result: DateTimePeople = {};
+  for (const [person, dateTimes] of Object.entries(availabilities)) {
+    for (const dateTime of Object.keys(dateTimes)) {
+      if (!result.hasOwnProperty(dateTime)) {
+        result[dateTime] = [];
+      }
+      result[dateTime].push(person);
+    }
   }
+  return result;
 }
 
-@media (min-width: 992px) {
-  .meeting-avl-button {
-    min-width: 10em;
+function cellIsInSelectionArea(
+  rowIdx: number,
+  colIdx: number,
+  state: MouseState,
+): boolean {
+  return (state.type === 'down' || state.type === 'upCellsSelected') && (
+    (
+      (state.downCell.rowIdx <= rowIdx && rowIdx <= state.curCell.rowIdx)
+      || (state.curCell.rowIdx <= rowIdx && rowIdx <= state.downCell.rowIdx)
+    ) && (
+      (state.downCell.colIdx <= colIdx && colIdx <= state.curCell.colIdx)
+      || (state.curCell.colIdx <= colIdx && colIdx <= state.downCell.colIdx)
+    )
+  );
+}
+
+function cellIsInSelectionColumn(
+  rowIdx: number,
+  colIdx: number,
+  state: MouseState,
+): boolean {
+  return (state.type === 'down' || state.type === 'upCellsSelected') && (
+    (
+      (state.downCell.rowIdx <= rowIdx && rowIdx <= state.curCell.rowIdx)
+      || (state.curCell.rowIdx <= rowIdx && rowIdx <= state.downCell.rowIdx)
+    ) && state.downCell.colIdx === colIdx
+  );
+}
+
+function useMouseupListener(dateTimes: string[][]) {
+  const dispatch = useAppDispatch();
+  const selMode = useAppSelector(selectSelMode);
+  const mouseState = useAppSelector(selectMouseState);
+
+  useEffect(() => {
+    const listener = () => dispatch(notifyMouseUp());
+    document.addEventListener('mouseup', listener);
+    return () => document.removeEventListener('mouseup', listener);
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (mouseState?.type !== 'upCellsSelected') {
+      return;
+    }
+    const dateTimesInSelectionArea: string[] = [];
+    let rowStart = mouseState.downCell.rowIdx;
+    let rowEnd = mouseState.curCell.rowIdx;
+    if (rowStart > rowEnd) {
+      [rowStart, rowEnd] = [rowEnd, rowStart];
+    }
+    let colStart = mouseState.downCell.colIdx;
+    let colEnd = mouseState.curCell.colIdx;
+    if (selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') {
+      if (colStart > colEnd) {
+        [colStart, colEnd] = [colEnd, colStart];
+      }
+    } else if (selMode.type === 'editingSchedule') {
+      colEnd = colStart;
+    }
+    for (let rowIdx = rowStart; rowIdx <= rowEnd; rowIdx++) {
+      for (let colIdx = colStart; colIdx <= colEnd; colIdx++) {
+        dateTimesInSelectionArea.push(dateTimes[rowIdx][colIdx]);
+      }
+    }
+    if (selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') {
+      if (mouseState.downCellWasOriginallySelected) {
+        dispatch(removeDateTimesAndResetMouse(dateTimesInSelectionArea));
+      } else {
+        dispatch(addDateTimesAndResetMouse(dateTimesInSelectionArea));
+      }
+    } else if (selMode.type === 'editingSchedule') {
+      dispatch(addDateTimesAndResetMouse(dateTimesInSelectionArea));
+    }
+  }, [mouseState, selMode.type, dispatch, dateTimes]);
+}
+
+function calculateDateTimeGrid(numRows: number, numCols: number, dateStrings: string[], startHour: number): string[][] {
+  const rows: string[][] = [];
+  for (let rowIdx = 0; rowIdx < numRows; rowIdx++) {
+    const row: string[] = [];
+    const hour = (startHour + Math.floor(rowIdx / 2)) % 24;
+    for (let colIdx = 0; colIdx < numCols; colIdx++) {
+      let date = dateStrings[colIdx];
+      if (hour < startHour) {
+        date = addDaysToDateString(date, 1);
+      }
+      const dateTime = customToISOString(
+        date,
+        hour,
+        rowIdx % 2 === 0 ? 0 : 30
+      );
+      row.push(dateTime);
+    }
+    rows.push(row);
   }
+  return rows;
 }
 
-.vw-section-card {
-  border: 1px solid rgba(120, 200, 255, 0.14);
-  border-radius: 20px;
-  padding: clamp(16px, 2.5vw, 28px);
-  background: rgba(0, 0, 0, 0.44);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.34);
-  backdrop-filter: blur(18px) saturate(140%);
-  -webkit-backdrop-filter: blur(18px) saturate(140%);
-}
+function MeetingGridBodyCells({
+  numRows, numCols, startHour, dateStrings,
+}: {
+  numRows: number, numCols: number, startHour: number, dateStrings: string[],
+}) {
+  const {respondents, minStartHour, maxEndHour, scheduledStartDateTime, scheduledEndDateTime} = useGetCurrentMeetingWithSelector(
+    ({data: meeting}) => ({
+      respondents: meeting?.respondents,
+      minStartHour: meeting?.minStartHour,
+      maxEndHour: meeting?.maxEndHour,
+      scheduledStartDateTime: meeting?.scheduledStartDateTime,
+      scheduledEndDateTime: meeting?.scheduledEndDateTime,
+    })
+  );
+  assert(respondents !== undefined);
+  const totalPeople = Object.keys(respondents).length;
+  const dateTimePeople = useMemo(() => {
+    const availabilities: PeopleDateTimes = {};
+    for (const [respondentID, respondent] of Object.entries(respondents)) {
+      availabilities[respondentID] = respondent.availabilities;
+    }
+    return createDateTimePeople(availabilities);
+  }, [respondents]);
+  const gridCoords = useMemo(() => flatGridCoords(numRows, numCols), [numRows, numCols]);
+  const dateTimes = useMemo(
+    () => calculateDateTimeGrid(numRows, numCols, dateStrings, startHour),
+    [numRows, numCols, dateStrings, startHour]
+  );
+  const meetingID = useAppSelector(selectCurrentMeetingID);
+  assert(meetingID !== undefined);
+  const externalEvents = useGetExternalCalendarEventsIfTokenIsPresent(meetingID);
+  const dateTimesToExternalEventInfo = useMemo(
+    () => {
+      if (minStartHour === undefined || maxEndHour === undefined) {
+        return {};
+      }
+      return calculateExternalEventInfoColumns(externalEvents, minStartHour, maxEndHour);
+    },
+    [externalEvents, minStartHour, maxEndHour]
+  );
+  const emptyArrayOfExternalEventInfo = useMemo(() => ({events: [], numCols: 0}), []);
+  const roundedDownScheduledStartDateTime = useMemo(() => {
+    return scheduledStartDateTime && roundDownDateTimeStr(scheduledStartDateTime);
+  }, [scheduledStartDateTime]);
+  const selMode = useAppSelector(selectSelMode);
+  const hoverUser = useAppSelector(selectHoverUser);
+  const somebodyIsHovered = hoverUser !== null;
+  useMouseupListener(dateTimes);
 
-.vw-meeting-meta-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.8rem;
-  align-items: baseline;
-  margin-bottom: 0.9rem;
-}
+  return (
+    <>
+      {gridCoords.map(([colIdx, rowIdx], i) => {
+        const dateTime = dateTimes[rowIdx][colIdx];
+        const scheduledStartDateTimeProp =
+          roundedDownScheduledStartDateTime === dateTime
+            ? scheduledStartDateTime
+            : undefined;
+        const externalEvents = dateTimesToExternalEventInfo[dateTime] || emptyArrayOfExternalEventInfo;
+        const hoverUserIsAvailableAtThisTime = somebodyIsHovered && respondents[hoverUser].availabilities[dateTime];
+        const selectedUserIsAvailableAtThisTime =
+          selMode.type === 'selectedUser' &&
+          respondents[selMode.selectedRespondentID].availabilities[dateTime];
+        const numPeopleAvailableAtThisTime = dateTimePeople[dateTime]?.length ?? 0;
 
-.vw-meeting-meta-label {
-  text-transform: uppercase;
-  letter-spacing: 0.18em;
-  font-size: 0.75rem;
-  color: rgba(244, 244, 244, 0.6);
+        return (
+          <Cell
+            key={i}
+            cellIdx={i}
+            rowIdx={rowIdx}
+            colIdx={colIdx}
+            dateTime={dateTime}
+            scheduledStartDateTime={scheduledStartDateTimeProp}
+            scheduledEndDateTime={scheduledEndDateTime}
+            externalEvents={externalEvents}
+            somebodyIsHovered={somebodyIsHovered}
+            hoverUserIsAvailableAtThisTime={!!hoverUserIsAvailableAtThisTime}
+            selectedUserIsAvailableAtThisTime={!!selectedUserIsAvailableAtThisTime}
+            totalPeople={totalPeople}
+            numPeopleAvailableAtThisTime={numPeopleAvailableAtThisTime}
+          />
+        );
+      })}
+    </>
+  );
 }
+export default React.memo(MeetingGridBodyCells);
 
-.vw-meeting-meta-value {
-  font-weight: 700;
-}
+const Cell = React.memo(function Cell({
+  rowIdx,
+  colIdx,
+  cellIdx,
+  dateTime,
+  scheduledStartDateTime,
+  scheduledEndDateTime,
+  externalEvents,
+  somebodyIsHovered,
+  hoverUserIsAvailableAtThisTime,
+  selectedUserIsAvailableAtThisTime,
+  numPeopleAvailableAtThisTime,
+  totalPeople,
+}: {
+  rowIdx: number,
+  colIdx: number,
+  cellIdx: number,
+  dateTime: string,
+  scheduledStartDateTime: string | undefined,
+  scheduledEndDateTime: string | undefined,
+  externalEvents: ExternalEventInfoWithNumCols,
+  somebodyIsHovered: boolean,
+  hoverUserIsAvailableAtThisTime: boolean,
+  selectedUserIsAvailableAtThisTime: boolean,
+  numPeopleAvailableAtThisTime: number,
+  totalPeople: number,
+}) {
+  const selMode = useAppSelector(selectSelMode);
+  const {selfRespondentID} = useGetCurrentMeetingWithSelector(
+    ({data}) => ({selfRespondentID: data?.selfRespondentID})
+  );
+  const isSelected = useAppSelector(state => !!selectSelectedTimes(state)[dateTime]);
+  const mouseStateType = useAppSelector((state) => selectMouseState(state)?.type);
+  const isInMouseSelectionArea = useAppSelector((state) => {
+    const mouseState = selectMouseState(state);
+    return mouseState !== null && cellIsInSelectionArea(rowIdx, colIdx, mouseState);
+  });
+  const isInMouseSelectionColumn = useAppSelector((state) => {
+    const mouseState = selectMouseState(state);
+    return mouseState !== null && cellIsInSelectionColumn(rowIdx, colIdx, mouseState);
+  });
+  const mouseSelectionAreaIsAddingDateTimes = useAppSelector((state) => {
+    const mouseState = selectMouseState(state);
+    return (
+      mouseState !== null &&
+      (mouseState.type === 'down' || mouseState.type === 'upCellsSelected') &&
+      !mouseState.downCellWasOriginallySelected
+    );
+  });
+  const dispatch = useAppDispatch();
+  const { showToast } = useToast();
 
-.vw-meeting-about-text {
-  color: rgba(244, 244, 244, 0.78);
-  white-space: pre-wrap;
-}
+  const classNames = ['weeklyview__bodycell'];
+  if (rowIdx === 0) classNames.push('weeklyview__bodycell_firstrow');
+  if (colIdx === 0) classNames.push('weeklyview__bodycell_firstcol');
+  if (rowIdx % 2 === 1) classNames.push('weeklyview__bodycell_oddrow');
 
-.vw-weekly-shell {
-  border: 1px solid rgba(120, 200, 255, 0.14);
-  border-radius: 22px;
-  padding: 1.35rem 1.35rem 1.1rem;
-  background: rgba(0, 0, 0, 0.28);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.24);
-}
+  const style: Style = {gridArea: `c${cellIdx}`};
+  let showRespondentsColour = false;
 
-.weeklyview__local_time_text {
-  color: rgba(244, 244, 244, 0.68);
-  font-size: 0.95em;
-}
-
-.weeklyview__local_time_box {
-  margin: 1.1rem auto 0;
-  width: fit-content;
-  padding: 0.65rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.45);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.03);
-  color: rgba(244, 244, 244, 0.82);
-  font-size: 0.95rem;
-  text-align: center;
-}
-
-.weeklyview__bodycell {
-  user-select: none;
-  text-align: left;
-  position: relative;
-}
-
-.weeklyview__bodycell::after,
-.weeklyview__bodycell_oddrow::after {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: -1;
-  border-right: 2px solid rgba(255, 255, 255, 0.98);
-}
-
-.weeklyview__bodycell_oddrow::after {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.98);
-}
-
-.weeklyview__bodycell_firstrow {
-  border-top: 2px solid rgba(255, 255, 255, 0.98);
-}
-
-.weeklyview__bodycell_firstcol {
-  border-left: 2px solid rgba(255, 255, 255, 0.98);
-}
-
-.weeklyview__bodycell.selected {
-  background-color: rgba(255, 255, 255, 0.03) !important;
-}
-
-.weeklyview__bodycell.scheduling {
-  background-color: rgba(255, 255, 255, 0.08) !important;
-}
-
-.weeklyview__bodycell:hover {
-  cursor: pointer;
-}
-
-.canSelectDates .weeklyview__bodycell:hover {
-  cursor: ns-resize;
-}
-
-.weeklyview__bodycell:hover::after {
-  border: 2px dashed rgba(255, 255, 255, 1);
-  z-index: unset;
-}
-
-.weeklyview__bodycell_scheduled_inner {
-  width: 86%;
-  left: 7%;
-  right: 7%;
-  font-size: 0.82em;
-  color: #0b0b0b;
-  background: rgba(255, 255, 255, 0.96);
-  border: 1px solid rgba(255, 255, 255, 1);
-  border-radius: 14px;
-  box-shadow: 0 10px 28px rgba(255, 255, 255, 0.12);
-  z-index: 2;
-}
-
-.weeklyview__bodycell_external_event {
-  width: 100%;
-  border-radius: 8px;
-  background-color: rgba(122, 191, 255, 0.28);
-  border: 1px solid rgba(122, 191, 255, 0.28);
-  padding-top: 0.3em;
-  padding-left: 0.7em;
-}
-
-.weeklyview__bodycell_scheduled_inner,
-.weeklyview__bodycell_external_event {
-  position: absolute;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.weeklyview__bodycell_external_event_text {
-  font-size: 0.8em;
-  line-height: 1.25;
-}
-
-.weeklyview-grid {
-  text-align: right;
-}
-
-.weeklyview__hourcell {
-  padding-right: 0.8em;
-  font-size: 0.95em;
-  color: rgba(244, 244, 244, 0.92);
-}
-
-.weeklyview__colheadercell {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: rgba(244, 244, 244, 0.96);
-}
-
-.weeklyview-grid__monthtext {
-  grid-area: m;
-  text-align: left;
-  font-size: 1.2em;
-  height: 2em;
-  margin-bottom: 1.1em;
-  display: flex;
-  align-items: center;
-  color: rgba(244, 244, 244, 0.96);
-}
-
-@media (max-width: 767.98px) {
-  .weeklyview__colheadercell,
-  .weeklyview__hourcell,
-  .weeklyview__bodycell {
-    font-size: 0.8rem;
+  if (selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') {
+    if (
+      (isInMouseSelectionArea && mouseSelectionAreaIsAddingDateTimes) ||
+      (!isInMouseSelectionArea && isSelected)
+    ) {
+      classNames.push('selected');
+    }
+  } else if (selMode.type === 'editingSchedule') {
+    if (isInMouseSelectionColumn || isSelected) {
+      classNames.push('scheduling');
+    } else if (numPeopleAvailableAtThisTime > 0) {
+      showRespondentsColour = true;
+    }
+  } else if (selMode.type === 'selectedUser') {
+    if (selectedUserIsAvailableAtThisTime) {
+      classNames.push('selected');
+    }
+  } else if (selMode.type === 'none') {
+    if (somebodyIsHovered) {
+      if (hoverUserIsAvailableAtThisTime) {
+        classNames.push('selected');
+      }
+    } else if (numPeopleAvailableAtThisTime > 0) {
+      showRespondentsColour = true;
+    }
+  } else {
+    assertIsNever(selMode);
   }
 
-  .vw-weekly-shell {
-    padding: 1rem 0.75rem 0.85rem;
+  if (showRespondentsColour) {
+    const alpha = Math.min(0.12, 0.025 + 0.035 * (numPeopleAvailableAtThisTime / Math.max(totalPeople, 1)));
+    style.backgroundColor = `rgba(255, 255, 255, ${alpha})`;
   }
 
-  .weeklyview__local_time_box {
-    font-size: 0.86rem;
+  let externalEventBoxes: ReactElement<HTMLDivElement>[] | undefined;
+  if (
+    (selMode.type === 'addingRespondent' || (
+      selMode.type === 'editingRespondent' && selMode.respondentID === selfRespondentID
+    )) &&
+    externalEvents.events.length > 0
+  ) {
+    classNames.push('position-relative', 'd-grid');
+    style.gridTemplateColumns = `repeat(${externalEvents.numCols}, 1fr)`;
+    externalEventBoxes = externalEvents.events.map((externalEvent, i) => {
+      const {topOffset, height} = calculateTopOffsetAndHeightOfExternalEventBox(
+        dateTime,
+        externalEvent.startDateTime,
+        externalEvent.endDateTime
+      );
+      return (
+        <div
+          key={i}
+          className="weeklyview__bodycell_external_event"
+          style={{
+            top: Math.floor(topOffset * 100) + '%',
+            height: Math.floor(height * 100) + '%',
+            gridColumnStart: externalEvent.colStart,
+            gridColumnEnd: externalEvent.colStart + 1,
+          }}
+        >
+          <div className="weeklyview__bodycell_external_event_text">{externalEvent.summary}</div>
+        </div>
+      );
+    });
   }
-}
 
-.respondents-container {
-  margin-top: 4em;
-  margin-left: 1em;
-  min-width: 13.5em;
-}
+  let scheduledTimeBox: ReactElement<HTMLDivElement> | undefined;
+  if (
+    selMode.type === 'none' &&
+    scheduledStartDateTime !== undefined &&
+    scheduledEndDateTime !== undefined
+  ) {
+    const {topOffset, height} = calculateTopOffsetAndHeightOfExternalEventBox(
+      dateTime,
+      scheduledStartDateTime,
+      scheduledEndDateTime
+    );
+    scheduledTimeBox = (
+      <div
+        className="d-flex align-items-center weeklyview__bodycell_scheduled_inner"
+        style={{
+          top: Math.floor(topOffset * 100) + '%',
+          height: Math.floor(height * 100) + '%',
+        }}
+      >
+        <div className="flex-grow-1 text-center">SCHEDULED</div>
+      </div>
+    );
+  }
 
-.vw-respondents-card {
-  border: 1px solid rgba(120, 200, 255, 0.14);
-  border-radius: 20px;
-  padding: 1.25rem 1.1rem;
-  background: rgba(0, 0, 0, 0.3);
-  height: fit-content;
-}
+  let onMouseEnter: React.MouseEventHandler | undefined;
+  let onMouseLeave: React.MouseEventHandler | undefined;
+  let onMouseDown: React.MouseEventHandler | undefined;
 
-.vw-respondents-heading {
-  margin-top: 0.25rem;
-  margin-bottom: 1.35rem;
-  font-size: 1.2em;
-  font-weight: 700;
-}
+  if (
+    selMode.type === 'addingRespondent' ||
+    selMode.type === 'editingRespondent' ||
+    selMode.type === 'editingSchedule'
+  ) {
+    if (mouseStateType === 'upNoCellsSelected') {
+      onMouseDown = () => dispatch(notifyMouseDown({cell: {rowIdx, colIdx}, wasOriginallySelected: isSelected}));
+    } else if (mouseStateType === 'down') {
+      onMouseEnter = () => dispatch(notifyMouseEnter({cell: {rowIdx, colIdx}}));
+    }
+  } else if (selMode.type === 'selectedUser') {
+    onMouseDown = () => showToast({
+      msg: `Click the 'Edit availability' button`,
+      msgType: 'success',
+      autoClose: true,
+    });
+  } else if (selMode.type === 'none') {
+    onMouseDown = () => showToast({
+      msg: "Click the 'Add availability' button",
+      msgType: 'success',
+      autoClose: true,
+    });
+    onMouseEnter = () => dispatch(setHoverDateTime(dateTime));
+    onMouseLeave = () => dispatch(setHoverDateTime(null));
+  }
 
-.vw-respondents-list {
-  margin: 0;
-  padding: 0;
-}
-
-.vw-respondent-item {
-  list-style-type: none;
-  margin: 0.7em 0;
-  padding: 0.8rem 0.9rem;
-  border-radius: 14px;
-  border: 1px solid transparent;
-  background: rgba(255, 255, 255, 0.03);
-  transition: 0.18s ease;
-}
-
-.vw-respondent-item.unavailable {
-  color: rgba(244, 244, 244, 0.35);
-  text-decoration: line-through;
-}
-
-.vw-respondent-item.active {
-  border-color: rgba(120, 215, 255, 0.26);
-  background: rgba(120, 215, 255, 0.08);
-}
-
-.vw-respondent-item:hover {
-  color: var(--custom-primary);
-  cursor: pointer;
-  border-color: rgba(120, 215, 255, 0.2);
-}
-EOF
+  return (
+    <div
+      className={classNames.join(' ')}
+      style={style}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      onMouseDown={onMouseDown}
+    >
+      {scheduledTimeBox}
+      {externalEventBoxes}
+    </div>
+  );
+});
