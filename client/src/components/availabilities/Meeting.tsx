@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import GenericSpinner from 'components/GenericSpinner';
 import NonFocusButton from 'components/NonFocusButton';
@@ -22,7 +22,7 @@ export default function Meeting() {
   const params = useParams();
   const meetingID = params.id;
   const skip = !meetingID;
-  const {data, error} = useGetMeetingQuery(meetingID ?? '', {skip});
+  const { data, error } = useGetMeetingQuery(meetingID ?? '', { skip });
 
   useEffect(() => {
     dispatch(setCurrentMeetingID(meetingID));
@@ -31,20 +31,14 @@ export default function Meeting() {
   useSetTitle(data?.name);
 
   useEffect(() => {
-    // Reset the datetime selections when this component unmounts so
-    // that the selections from one meeting don't carry over to another
     return () => {
       dispatch(resetSelection());
     };
   }, [dispatch]);
 
-  // Wait until the data for the current meeting is ready.
-  // Since the setCurrentMeetingID call happens asynchronously, the data for
-  // a different meeting might still be loaded because the old meetingID is
-  // still present in the Redux store. So we need to check the meetingID.
-  const {isReady} = useGetCurrentMeetingWithSelector(
-    ({data: meeting}) => ({isReady: meeting && meeting.meetingID === meetingID})
-  );
+  const { isReady } = useGetCurrentMeetingWithSelector(({ data: meeting }) => ({
+    isReady: meeting && meeting.meetingID === meetingID,
+  }));
 
   if (skip) {
     return <p>Meeting ID is invalid.</p>;
@@ -79,15 +73,22 @@ export default function Meeting() {
 const MeetingTitleRow = React.memo(function MeetingTitleRow({
   setIsEditingMeeting,
 }: {
-  setIsEditingMeeting: (val: boolean) => void,
+  setIsEditingMeeting: (val: boolean) => void;
 }) {
-  const {name} = useGetCurrentMeetingWithSelector(
-    ({data: meeting}) => ({name: meeting?.name})
-  );
+  const { name, meetingID } = useGetCurrentMeetingWithSelector(({ data: meeting }) => ({
+    name: meeting?.name,
+    meetingID: meeting?.meetingID,
+  }));
   const isLoggedIn = useSelfInfoIsPresent();
   const [showMustBeLoggedInModal, setShowMustBeLoggedInModal] = useState(false);
   const [showClipboardFailedModal, setShowClipboardFailedModal] = useState(false);
-  const {showToast} = useToast();
+  const { showToast } = useToast();
+
+  const shareUrl = useMemo(() => {
+    if (!meetingID) return window.location.href;
+    return `${window.location.origin}/scheduler/#/m/${meetingID}`;
+  }, [meetingID]);
+
   const onClickEditButton = () => {
     if (isLoggedIn) {
       setIsEditingMeeting(true);
@@ -95,36 +96,39 @@ const MeetingTitleRow = React.memo(function MeetingTitleRow({
       setShowMustBeLoggedInModal(true);
     }
   };
+
   const onClickShareButton = async () => {
     try {
-      // Don't include the query parameters, just in case there's something sensitive in there
-      await navigator.clipboard.writeText(window.location.origin + window.location.pathname);
+      await navigator.clipboard.writeText(shareUrl);
     } catch (err) {
       console.error('Failed to write to clipboard:', err);
       setShowClipboardFailedModal(true);
       return;
     }
     showToast({
-      msg: 'Successfully copied URL to clipboard',
+      msg: 'Successfully copied meeting link',
       msgType: 'success',
       autoClose: true,
     });
   };
+
   return (
     <>
       <div className="d-flex align-items-center">
-        <div className="me-auto" style={{fontSize: '1.3em'}}>{name}</div>
+        <div className="me-auto" style={{ fontSize: '1.3em' }}>
+          {name}
+        </div>
         <NonFocusButton
           className="btn btn-outline-secondary ps-3 ps-md-4 pe-3 d-flex align-items-center"
           onClick={onClickEditButton}
         >
-          <span className="me-3 d-none d-md-inline">Edit</span> {<PencilIcon />}
+          <span className="me-3 d-none d-md-inline">Edit</span> <PencilIcon />
         </NonFocusButton>
         <NonFocusButton
           className="btn btn-outline-primary ms-4 ps-3 ps-md-4 pe-3 d-flex align-items-center"
           onClick={onClickShareButton}
         >
-          <span className="me-3 d-none d-md-inline">Share</span> {<ShareIcon />}
+          <span className="me-3 d-none d-md-inline">Share</span> <ShareIcon />
         </NonFocusButton>
       </div>
       <InfoModal show={showMustBeLoggedInModal} setShow={setShowMustBeLoggedInModal}>
@@ -138,31 +142,68 @@ const MeetingTitleRow = React.memo(function MeetingTitleRow({
 });
 
 const MeetingAboutRow = React.memo(function MeetingAboutRow() {
-  const {about} = useGetCurrentMeetingWithSelector(
-    ({data: meeting}) => ({about: meeting?.about})
-  );
+  const { about } = useGetCurrentMeetingWithSelector(({ data: meeting }) => ({
+    about: meeting?.about,
+  }));
+
+  const parsed = useMemo(() => {
+    if (!about) return { location: '', details: '' };
+
+    const blocks = about
+      .split(/\n\s*\n/)
+      .map(part => part.trim())
+      .filter(Boolean);
+
+    let location = '';
+    const details: string[] = [];
+
+    for (const block of blocks) {
+      if (!location && block.toLowerCase().startsWith('location:')) {
+        location = block.replace(/^location:\s*/i, '').trim();
+      } else {
+        details.push(block);
+      }
+    }
+
+    return {
+      location,
+      details: details.join('\n\n'),
+    };
+  }, [about]);
+
   if (!about) return null;
+
   return (
-    <div style={{marginTop: '1.5em', fontSize: '0.9em'}}>
-      {about}
+    <div className="vw-section-card mt-4">
+      {parsed.location && (
+        <div className="vw-meeting-meta-row">
+          <span className="vw-meeting-meta-label">Location</span>
+          <span className="vw-meeting-meta-value">{parsed.location}</span>
+        </div>
+      )}
+      {parsed.details && (
+        <div className="vw-meeting-about-text">
+          {parsed.details.split('\n').map((line, idx) => (
+            <div key={idx}>{line}</div>
+          ))}
+        </div>
+      )}
     </div>
   );
 });
 
 function PencilIcon() {
-  // Adapted from https://icons.getbootstrap.com/icons/pencil/
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil" viewBox="0 0 16 16" style={{position: 'relative', top: '0.05em'}}>
-      <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil" viewBox="0 0 16 16" style={{ position: 'relative', top: '0.05em' }}>
+      <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
     </svg>
   );
 }
 
 function ShareIcon() {
-  // Copied from https://icons.getbootstrap.com/icons/share/
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-share" viewBox="0 0 16 16" style={{position: 'relative', top: '0.1em'}}>
-      <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z"/>
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-share" viewBox="0 0 16 16" style={{ position: 'relative', top: '0.1em' }}>
+      <path d="M13.5 1a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zM11 2.5a2.5 2.5 0 1 1 .603 1.628l-6.718 3.12a2.499 2.499 0 0 1 0 1.504l6.718 3.12a2.5 2.5 0 1 1-.488.876l-6.718-3.12a2.5 2.5 0 1 1 0-3.256l6.718-3.12A2.5 2.5 0 0 1 11 2.5zm-8.5 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3zm11 5.5a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3z" />
     </svg>
   );
 }
