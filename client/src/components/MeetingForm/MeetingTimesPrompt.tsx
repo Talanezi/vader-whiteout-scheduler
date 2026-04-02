@@ -106,7 +106,7 @@ export default function MeetingTimesPrompt({
   endTime: number;
   setEndTime: (time: number) => void;
 }) {
-  const timezoneText = tzAbbr();
+  const timezoneText = tzAbbr;
 
   return (
     <Form.Group className="create-meeting-form-group">
