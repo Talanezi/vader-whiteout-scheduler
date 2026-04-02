@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import { useNavigate } from 'react-router-dom';
 import { resetSelectedDates, selectSelectedDates } from 'slices/selectedDates';
 import { useAppDispatch, useAppSelector } from 'app/hooks';
 import './MeetingForm.css';
 import MeetingNamePrompt from './MeetingNamePrompt';
+import MeetingLocationPrompt from './MeetingLocationPrompt';
 import MeetingAboutPrompt from './MeetingAboutPrompt';
 import MeetingTimesPrompt from './MeetingTimesPrompt';
 import { useCreateMeetingMutation } from 'slices/api';
@@ -14,6 +15,7 @@ import useSetTitle from 'utils/title.hook';
 
 export default function MeetingForm() {
   const [meetingName, setMeetingName] = useState('');
+  const [meetingLocation, setMeetingLocation] = useState('');
   const [meetingAbout, setMeetingAbout] = useState('');
   const [startTime, setStartTime] = useState(17);
   const [endTime, setEndTime] = useState(22);
@@ -33,6 +35,17 @@ export default function MeetingForm() {
     }
   }, [data, isSuccess, dispatch, navigate]);
 
+  const normalizedAbout = useMemo(() => {
+    const bits: string[] = [];
+    if (meetingLocation.trim()) {
+      bits.push(`Location: ${meetingLocation.trim()}`);
+    }
+    if (meetingAbout.trim()) {
+      bits.push(meetingAbout.trim());
+    }
+    return bits.join('\n\n');
+  }, [meetingLocation, meetingAbout]);
+
   if (isSuccess) {
     return null;
   }
@@ -40,13 +53,12 @@ export default function MeetingForm() {
   const onSubmit: React.FormEventHandler<HTMLFormElement> = (ev) => {
     ev.preventDefault();
 
-    if (meetingName === '') {
-      return;
-    }
+    if (meetingName.trim() === '') return;
+    if (endTime <= startTime) return;
 
     createMeeting({
-      name: meetingName,
-      about: meetingAbout,
+      name: meetingName.trim(),
+      about: normalizedAbout,
       timezone: ianaTzName,
       minStartHour: startTime,
       maxEndHour: endTime,
@@ -75,6 +87,11 @@ export default function MeetingForm() {
           An error occurred: {getReqErrorMessage(error)}
         </p>
       )}
+
+      <MeetingLocationPrompt
+        meetingLocation={meetingLocation}
+        setMeetingLocation={setMeetingLocation}
+      />
 
       <MeetingAboutPrompt
         meetingAbout={meetingAbout}
