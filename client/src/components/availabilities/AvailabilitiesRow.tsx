@@ -7,12 +7,21 @@ import {
   useEditSelectedUser,
   createSchedule,
   selectSelectedTimes,
+  addDateTimesAndResetMouse,
+  removeDateTimesAndResetMouse,
 } from 'slices/availabilitiesSelection';
 import { useAppSelector, useAppDispatch } from 'app/hooks';
 import SubmitAsGuestModal from './SubmitAsGuestModal';
 import { useToast } from 'components/Toast';
 import { assert, assertIsNever, scrollUpIntoViewIfNeeded } from 'utils/misc.utils';
-import { addMinutesToDateTimeString, daysOfWeek, months, to12HourClock } from 'utils/dates.utils';
+import {
+  addMinutesToDateTimeString,
+  customToISOString,
+  daysOfWeek,
+  getDateFromString,
+  months,
+  to12HourClock,
+} from 'utils/dates.utils';
 import ButtonWithSpinner from 'components/ButtonWithSpinner';
 import { useGetCurrentMeetingWithSelector } from 'utils/meetings.hooks';
 import { selectTokenIsPresent } from 'slices/authentication';
@@ -23,18 +32,81 @@ import InfoModal from 'components/InfoModal';
 import NonFocusButton from 'components/NonFocusButton';
 import DeleteRespondentModal from './DeleteRespondentModal';
 
+const TEMPLATE_KEY = 'vw_availability_template_v1';
+
+type TemplateSlot = {
+  weekday: number;
+  hour: number;
+  minute: number;
+};
+
+function saveTemplateFromDateTimes(dateTimes: string[]) {
+  const slots: TemplateSlot[] = dateTimes
+    .map(dateTime => {
+      const d = new Date(dateTime);
+      return {
+        weekday: d.getDay(),
+        hour: d.getHours(),
+        minute: d.getMinutes(),
+      };
+    })
+    .filter((slot, idx, arr) =>
+      arr.findIndex(other =>
+        other.weekday === slot.weekday &&
+        other.hour === slot.hour &&
+        other.minute === slot.minute
+      ) === idx
+    );
+
+  localStorage.setItem(TEMPLATE_KEY, JSON.stringify(slots));
+}
+
+function loadTemplate(): TemplateSlot[] {
+  try {
+    const raw = localStorage.getItem(TEMPLATE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      slot =>
+        typeof slot?.weekday === 'number' &&
+        typeof slot?.hour === 'number' &&
+        typeof slot?.minute === 'number'
+    );
+  } catch {
+    return [];
+  }
+}
+
+function buildDateTimesFromTemplate(slots: TemplateSlot[], allDateStrings: string[]) {
+  const result: string[] = [];
+
+  for (const dateString of allDateStrings) {
+    const weekday = getDateFromString(dateString).getDay();
+    for (const slot of slots) {
+      if (slot.weekday === weekday) {
+        result.push(customToISOString(dateString, slot.hour, slot.minute));
+      }
+    }
+  }
+
+  return result;
+}
+
 function AvailabilitiesRow({
   moreDaysToRight,
   pageDispatch,
+  allDateStrings,
 }: {
-  moreDaysToRight: boolean,
-  pageDispatch: React.Dispatch<'inc' | 'dec'>,
+  moreDaysToRight: boolean;
+  pageDispatch: React.Dispatch<'inc' | 'dec'>;
+  allDateStrings: string[];
 }) {
   const selMode = useAppSelector(selectSelMode);
   const selectedTimes = useAppSelector(selectSelectedTimes);
   const meetingID = useAppSelector(selectCurrentMeetingID);
-  const {respondents, selfRespondentID, scheduledStartDateTime, scheduledEndDateTime} = useGetCurrentMeetingWithSelector(
-    ({data: meeting}) => ({
+  const { respondents, selfRespondentID, scheduledStartDateTime, scheduledEndDateTime } = useGetCurrentMeetingWithSelector(
+    ({ data: meeting }) => ({
       respondents: meeting?.respondents,
       selfRespondentID: meeting?.selfRespondentID,
       scheduledStartDateTime: meeting?.scheduledStartDateTime,
@@ -42,40 +114,41 @@ function AvailabilitiesRow({
     })
   );
   assert(meetingID !== undefined && respondents !== undefined);
-  // The ref is necessary to avoid showing the toast twice when submitting availabilities
-  // for the user who is currently logged in for the first time
+
   const selfRespondentIDRef = useRef(selfRespondentID);
   const isScheduled = scheduledStartDateTime !== undefined && scheduledEndDateTime !== undefined;
+
   const scheduledDateTimeTitle = useMemo(() => {
     if (scheduledStartDateTime === undefined || scheduledEndDateTime === undefined) {
       return null;
     }
     return createTitleWithSchedule(scheduledStartDateTime, scheduledEndDateTime);
   }, [scheduledStartDateTime, scheduledEndDateTime]);
-  // optimistic - assume that if token is present, user info will be successfully fetched
+
   const isLoggedIn = useAppSelector(selectTokenIsPresent);
   const editSelf = useEditSelf(isLoggedIn);
   const editSelectedUser = useEditSelectedUser();
-  // submitSelf is ONLY used for adding or updating one's availabilities when logged in
+
   const [
     submitSelf,
-    {isSuccess: submitSelf_isSuccess, isLoading: submitSelf_isLoading, error: submitSelf_error, reset: submitSelf_reset}
+    { isSuccess: submitSelf_isSuccess, isLoading: submitSelf_isLoading, error: submitSelf_error, reset: submitSelf_reset }
   ] = usePutSelfRespondentMutation();
-  // updateRespondent is used for updating some existing respondent, who may be the current
-  // user who is logged in
+
   const [
     updateRespondent,
-    {isSuccess: updateRespondent_isSuccess, isLoading: updateRespondent_isLoading, error: updateRespondent_error, reset: updateRespondent_reset}
+    { isSuccess: updateRespondent_isSuccess, isLoading: updateRespondent_isLoading, error: updateRespondent_error, reset: updateRespondent_reset }
   ] = useUpdateAvailabilitiesMutation();
 
   const [
     schedule,
-    {isSuccess: schedule_isSuccess, isLoading: schedule_isLoading, error: schedule_error, reset: schedule_reset}
+    { isSuccess: schedule_isSuccess, isLoading: schedule_isLoading, error: schedule_error, reset: schedule_reset }
   ] = useScheduleMeetingMutation();
+
   const [
     unschedule,
-    {isSuccess: unschedule_isSuccess, isLoading: unschedule_isLoading, error: unschedule_error, reset: unschedule_reset}
+    { isSuccess: unschedule_isSuccess, isLoading: unschedule_isLoading, error: unschedule_error, reset: unschedule_reset }
   ] = useUnscheduleMeetingMutation();
+
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
   const [showGuestModal, setShowGuestModal] = useState(false);
@@ -84,8 +157,6 @@ function AvailabilitiesRow({
   const errorMessageElemRef = useRef<HTMLParagraphElement>(null);
   let title = 'Availabilities';
   const [selectedUserName, setSelectedUserName] = useState<string | null>(null);
-  // A ref is necessary to avoid running the useEffect hooks (which show the
-  // toast messages) twice
   const selectedUserNameRef = useRef<string | null>(null);
 
   if (scheduledDateTimeTitle !== null) {
@@ -104,7 +175,6 @@ function AvailabilitiesRow({
     }
   }, [submitSelf_isSuccess, showToast, dispatch]);
 
-  // Make sure this runs AFTER the hook which shows the toast, above
   useEffect(() => {
     selfRespondentIDRef.current = selfRespondentID;
   }, [selfRespondentID]);
@@ -113,7 +183,7 @@ function AvailabilitiesRow({
     if (updateRespondent_isSuccess) {
       dispatch(resetSelection());
     }
-  }, [updateRespondent_isSuccess, dispatch])
+  }, [updateRespondent_isSuccess, dispatch]);
 
   useEffect(() => {
     if (schedule_isSuccess) {
@@ -135,7 +205,6 @@ function AvailabilitiesRow({
     } else {
       selectedUserNameRef.current = null;
     }
-    // FIXME: this feels wrong
     setSelectedUserName(selectedUserNameRef.current);
   }, [selMode, respondents]);
 
@@ -145,6 +214,7 @@ function AvailabilitiesRow({
     if (schedule_error) schedule_reset();
     if (unschedule_error) unschedule_reset();
   };
+
   const error = submitSelf_error || updateRespondent_error || schedule_error || unschedule_error;
 
   useEffect(() => {
@@ -153,43 +223,89 @@ function AvailabilitiesRow({
     }
   }, [error]);
 
-  const btnDisabled = submitSelf_isLoading || updateRespondent_isLoading || schedule_isLoading || unschedule_isLoading;
+  const btnDisabled =
+    submitSelf_isLoading || updateRespondent_isLoading || schedule_isLoading || unschedule_isLoading;
+
+  const canUseTemplate =
+    selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent';
+
+  const onSaveTemplate = () => {
+    const current = Object.keys(selectedTimes);
+    if (current.length === 0) {
+      showToast({
+        msg: 'Select at least one availability block first',
+        msgType: 'success',
+        autoClose: true,
+      });
+      return;
+    }
+    saveTemplateFromDateTimes(current);
+    showToast({
+      msg: 'Saved weekday availability template',
+      msgType: 'success',
+      autoClose: true,
+    });
+  };
+
+  const onApplyTemplate = () => {
+    const template = loadTemplate();
+    if (template.length === 0) {
+      showToast({
+        msg: 'No saved availability template yet',
+        msgType: 'success',
+        autoClose: true,
+      });
+      return;
+    }
+
+    const current = Object.keys(selectedTimes);
+    const next = buildDateTimesFromTemplate(template, allDateStrings);
+
+    if (current.length > 0) {
+      dispatch(removeDateTimesAndResetMouse(current));
+    }
+    if (next.length > 0) {
+      dispatch(addDateTimesAndResetMouse(next));
+    }
+
+    showToast({
+      msg: 'Applied saved weekday template',
+      msgType: 'success',
+      autoClose: true,
+    });
+  };
+
   let rightBtnText: string | undefined;
   let onRightBtnClick: React.MouseEventHandler<HTMLButtonElement> | undefined;
   let rightBtn_isLoading = false;
+
   if (selMode.type === 'none') {
-    if (selfRespondentID !== undefined) {
-      rightBtnText = 'Edit availability';
-    } else {
-      rightBtnText = 'Add availability';
-    }
+    rightBtnText = selfRespondentID !== undefined ? 'Edit availability' : 'Add availability';
     onRightBtnClick = () => editSelf();
   } else if (selMode.type === 'addingRespondent') {
     title = 'Add your availability';
     rightBtnText = 'Continue';
     if (moreDaysToRight) {
       onRightBtnClick = () => pageDispatch('inc');
+    } else if (isLoggedIn) {
+      onRightBtnClick = () => {
+        submitSelf({
+          id: meetingID,
+          putRespondentDto: {
+            availabilities: Object.keys(selectedTimes),
+          },
+        });
+      };
+      rightBtn_isLoading = submitSelf_isLoading;
     } else {
-      if (isLoggedIn) {
-        onRightBtnClick = () => {
-          submitSelf({
-            id: meetingID,
-            putRespondentDto: {
-              availabilities: Object.keys(selectedTimes),
-            },
-          });
-        };
-        rightBtn_isLoading = submitSelf_isLoading;
-      } else {
-        onRightBtnClick = () => setShowGuestModal(true);
-      }
+      onRightBtnClick = () => setShowGuestModal(true);
     }
   } else if (selMode.type === 'editingRespondent') {
-    if (selfRespondentID === selMode.respondentID) {
-      title = 'Edit your availability';
-    } else {
-      title = `Edit ${selectedUserName}'s availability`;
-    }
+    title =
+      selfRespondentID === selMode.respondentID
+        ? 'Edit your availability'
+        : `Edit ${selectedUserName}'s availability`;
+
     rightBtnText = 'Next';
     if (moreDaysToRight) {
       onRightBtnClick = () => pageDispatch('inc');
@@ -218,37 +334,40 @@ function AvailabilitiesRow({
         id: meetingID,
         scheduleMeetingDto: {
           startDateTime: selectedTimesFlat[0],
-          endDateTime: addMinutesToDateTimeString(selectedTimesFlat[selectedTimesFlat.length - 1], 30),
-        }
+          endDateTime: addMinutesToDateTimeString(
+            selectedTimesFlat[selectedTimesFlat.length - 1],
+            30
+          ),
+        },
       });
     };
     rightBtn_isLoading = schedule_isLoading;
   } else if (selMode.type === 'selectedUser') {
-    if (selfRespondentID === selMode.selectedRespondentID) {
-      title = 'Your availability';
-      rightBtnText = 'Edit availability';
-    } else {
-      title = `${selectedUserName}'s availability`;
-      rightBtnText = `Edit ${selectedUserName}'s availability`;
-    }
+    title =
+      selfRespondentID === selMode.selectedRespondentID
+        ? 'Your availability'
+        : `${selectedUserName}'s availability`;
+
+    rightBtnText =
+      selfRespondentID === selMode.selectedRespondentID
+        ? 'Edit availability'
+        : `Edit ${selectedUserName}'s availability`;
+
     onRightBtnClick = () => editSelectedUser();
   } else {
-    // Make sure that we caught all the cases
     assertIsNever(selMode);
   }
 
   let leftBtnText: string | undefined;
   let onLeftBtnClick: React.MouseEventHandler<HTMLButtonElement> | undefined;
   let leftBtn_isLoading = false;
+
   if (selMode.type === 'none') {
     if (isScheduled) {
       leftBtnText = 'Unschedule';
-      onLeftBtnClick = () => {
-        unschedule(meetingID);
-      };
+      onLeftBtnClick = () => unschedule(meetingID);
       leftBtn_isLoading = unschedule_isLoading;
     } else {
-      // TODO: only show Schedule button if there is at least one respondent
       leftBtnText = 'Schedule';
       onLeftBtnClick = () => dispatch(createSchedule());
     }
@@ -256,52 +375,76 @@ function AvailabilitiesRow({
     leftBtnText = 'Cancel';
     onLeftBtnClick = () => {
       dispatch(resetSelection());
-      // Don't show the error if the user pressed Cancel
       clearErrors();
     };
   }
 
   const onDeleteBtnClick =
     selMode.type === 'editingRespondent'
-    ? () => setShowDeleteRespondentModal(true)
-    : undefined;
+      ? () => setShowDeleteRespondentModal(true)
+      : undefined;
 
   return (
     <>
-      <div className="d-flex align-items-center justify-content-between">
-        <div style={{fontSize: '1.3em'}}>{title}</div>
-        <div className="d-none d-md-flex">
-          {onDeleteBtnClick && (
-            <NonFocusButton
-              className="btn btn-outline-danger me-4 meeting-avl-button"
-              onClick={onDeleteBtnClick}
-              disabled={btnDisabled}
-            >
-              Delete
-            </NonFocusButton>
+      <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
+        <div style={{ fontSize: '1.3em' }}>{title}</div>
+
+        <div className="d-flex align-items-center flex-wrap gap-3">
+          {canUseTemplate && (
+            <>
+              <NonFocusButton
+                className="btn btn-outline-secondary meeting-avl-button"
+                onClick={onSaveTemplate}
+                disabled={btnDisabled}
+              >
+                Save template
+              </NonFocusButton>
+              <NonFocusButton
+                className="btn btn-outline-secondary meeting-avl-button"
+                onClick={onApplyTemplate}
+                disabled={btnDisabled}
+              >
+                Apply template
+              </NonFocusButton>
+            </>
           )}
-          {onLeftBtnClick && (
+
+          <div className="d-none d-md-flex">
+            {onDeleteBtnClick && (
+              <NonFocusButton
+                className="btn btn-outline-danger me-4 meeting-avl-button"
+                onClick={onDeleteBtnClick}
+                disabled={btnDisabled}
+              >
+                Delete
+              </NonFocusButton>
+            )}
+
+            {onLeftBtnClick && (
+              <ButtonWithSpinner
+                as="NonFocusButton"
+                className="btn btn-outline-primary meeting-avl-button"
+                onClick={onLeftBtnClick}
+                disabled={btnDisabled}
+                isLoading={leftBtn_isLoading}
+              >
+                {leftBtnText}
+              </ButtonWithSpinner>
+            )}
+
             <ButtonWithSpinner
               as="NonFocusButton"
-              className="btn btn-outline-primary meeting-avl-button"
-              onClick={onLeftBtnClick}
+              className="btn btn-primary ms-4 meeting-avl-button"
+              onClick={onRightBtnClick}
               disabled={btnDisabled}
-              isLoading={leftBtn_isLoading}
+              isLoading={rightBtn_isLoading}
             >
-              {leftBtnText}
+              {rightBtnText}
             </ButtonWithSpinner>
-          )}
-          <ButtonWithSpinner
-            as="NonFocusButton"
-            className="btn btn-primary ms-4 meeting-avl-button"
-            onClick={onRightBtnClick}
-            disabled={btnDisabled}
-            isLoading={rightBtn_isLoading}
-          >
-            {rightBtnText}
-          </ButtonWithSpinner>
+          </div>
         </div>
       </div>
+
       <BottomOverlay>
         {onDeleteBtnClick && (
           <NonFocusButton
@@ -333,6 +476,7 @@ function AvailabilitiesRow({
           {rightBtnText}
         </ButtonWithSpinner>
       </BottomOverlay>
+
       {error && (
         <p
           className="text-danger text-center mb-0 mt-3"
@@ -341,6 +485,7 @@ function AvailabilitiesRow({
           An error occurred: {getReqErrorMessage(error)}
         </p>
       )}
+
       <SubmitAsGuestModal show={showGuestModal} setShow={setShowGuestModal} />
       <InfoModal show={showInfoModal} setShow={setShowInfoModal}>
         <p className="text-center my-3">At least one time needs to be selected.</p>
@@ -353,20 +498,25 @@ function AvailabilitiesRow({
     </>
   );
 }
+
 export default React.memo(AvailabilitiesRow);
 
-/**
- * Generates a title of the form e.g. "Sat, Sep 24 from 9:00AM - 10:00AM"
- * @param startDateTime YYYY-MM-DDTHH:mm:ssZ
- * @param endDateTime YYYY-MM-DDTHH:mm:ssZ
- */
 function createTitleWithSchedule(startDateTime: string, endDateTime: string): string {
   const startDate = new Date(startDateTime);
   const endDate = new Date(endDateTime);
   const dayOfWeek = daysOfWeek[startDate.getDay()].substring(0, 3);
   const month = months[startDate.getMonth()].substring(0, 3);
   const day = startDate.getDate();
-  const startTime = to12HourClock(startDate.getHours()) + ':' + String(startDate.getMinutes()).padStart(2, '0') + (startDate.getHours() < 12 ? 'AM' : 'PM');
-  const endTime = to12HourClock(endDate.getHours()) + ':' + String(endDate.getMinutes()).padStart(2, '0') + (endDate.getHours() < 12 ? 'AM' : 'PM');
+  const startTime =
+    to12HourClock(startDate.getHours()) +
+    ':' +
+    String(startDate.getMinutes()).padStart(2, '0') +
+    (startDate.getHours() < 12 ? 'AM' : 'PM');
+  const endTime =
+    to12HourClock(endDate.getHours()) +
+    ':' +
+    String(endDate.getMinutes()).padStart(2, '0') +
+    (endDate.getHours() < 12 ? 'AM' : 'PM');
+
   return `${dayOfWeek}, ${month} ${day} from ${startTime} - ${endTime}`;
 }
