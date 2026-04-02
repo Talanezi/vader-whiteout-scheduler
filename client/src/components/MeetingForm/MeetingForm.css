@@ -1,3 +1,76 @@
+.create-meeting-page {
+  width: 100%;
+}
+
+.create-meeting-form-group {
+  margin-bottom: 2.5rem;
+}
+
+.create-meeting-question {
+  font-size: clamp(2.1rem, 4.5vw, 3.3rem);
+  line-height: 0.95;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  font-family: 'Crimson Text', serif;
+  font-weight: 700;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(120, 200, 255, 0.22);
+  border-radius: 0;
+  color: #f3f3f6;
+  padding: 0 0 0.7rem;
+  box-shadow: none !important;
+}
+
+.create-meeting-question::placeholder {
+  color: rgba(243, 243, 246, 0.72);
+}
+
+.create-meeting-question:focus {
+  background: transparent;
+  color: #ffffff;
+  border-color: rgba(120, 215, 255, 0.38);
+}
+
+.form-text-label {
+  display: block;
+  margin-bottom: 0.7rem;
+  font-size: 0.84rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(243, 243, 246, 0.68);
+}
+
+.form-text-input,
+.form-select-input,
+.create-meeting-form-group textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.03) !important;
+  border: 1px solid rgba(120, 200, 255, 0.16) !important;
+  color: #f2f2f5 !important;
+  border-radius: 16px !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 8px 30px rgba(0, 0, 0, 0.18);
+}
+
+.form-text-input::placeholder,
+.create-meeting-form-group textarea::placeholder {
+  color: rgba(243, 243, 246, 0.5) !important;
+}
+
+.form-text-input:focus,
+.form-select-input:focus,
+.create-meeting-form-group textarea:focus {
+  border-color: rgba(120, 215, 255, 0.34) !important;
+  box-shadow: 0 0 0 0.2rem rgba(120, 215, 255, 0.08) !important;
+}
+
+.create-meeting-form-group textarea {
+  min-height: 140px;
+  resize: vertical;
+  padding: 1rem 1.1rem;
+}
+
 .vw-time-range-row {
   position: relative;
   z-index: 30;
@@ -6,36 +79,174 @@
   align-items: flex-end;
   flex-wrap: wrap;
   overflow: visible !important;
-  margin-bottom: 12rem;
-  padding-bottom: 2rem;
+  margin-bottom: 18rem;
+  padding-bottom: 4rem;
 }
 
 .vw-time-dropdown {
   position: relative;
   min-width: 220px;
   overflow: visible;
-  margin-bottom: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.vw-time-trigger {
+  min-width: 220px;
+  min-height: 68px;
+  border-radius: 18px;
+  border: 1px solid rgba(120, 200, 255, 0.18);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f4f4f7;
+  padding: 0.95rem 1.05rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+}
+
+.vw-time-trigger:hover,
+.vw-time-trigger:focus {
+  border-color: rgba(120, 215, 255, 0.34);
+}
+
+.vw-time-trigger-value {
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.vw-time-trigger-icon {
+  opacity: 0.74;
+}
+
+.vw-time-separator {
+  min-height: 68px;
+  display: flex;
+  align-items: center;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: rgba(243, 243, 246, 0.88);
+}
+
+.vw-timezone-pill {
+  min-height: 68px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.05rem;
+  border-radius: 18px;
+  border: 1px solid rgba(120, 200, 255, 0.16);
+  background: rgba(255, 255, 255, 0.03);
+  color: #f3f3f6;
+  font-weight: 800;
+  letter-spacing: 0.04em;
 }
 
 .vw-time-panel {
-  margin-top: 0.75rem;
+  position: absolute;
+  top: calc(100% + 0.75rem);
+  left: 0;
+  min-width: 320px;
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(120, 200, 255, 0.2);
+  background: rgba(10, 12, 18, 0.98);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.42);
+  z-index: 1000;
+}
+
+.vw-time-panel-top {
+  padding: 1rem 1rem 0.8rem;
+  border-bottom: 1px solid rgba(120, 200, 255, 0.12);
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #f4f4f6;
 }
 
 .vw-time-panel-body {
   display: grid;
   grid-template-columns: 1.1fr 0.9fr;
-  min-height: 260px;
+  min-height: 320px;
 }
 
 .vw-time-hours {
-  max-height: 260px;
+  max-height: 320px;
   overflow-y: auto;
+  border-right: 1px solid rgba(120, 200, 255, 0.1);
 }
 
 .vw-time-meridiem {
   display: flex;
   flex-direction: column;
-  max-height: 260px;
+  max-height: 320px;
   overflow-y: auto;
+}
+
+.vw-time-option {
+  border: none;
+  background: transparent;
+  color: rgba(244, 244, 246, 0.82);
+  font-size: 1.15rem;
+  text-align: left;
+  padding: 0.9rem 1rem;
+  width: 100%;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.vw-time-option:hover,
+.vw-time-option:focus {
+  background: rgba(255, 255, 255, 0.06);
+  color: #ffffff;
+}
+
+.vw-time-option.active {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
+  font-weight: 800;
+}
+
+.vw-time-meridiem .vw-time-option {
+  text-transform: lowercase;
+  text-align: center;
+}
+
+.create-meeting-button {
+  min-width: 10rem;
+}
+
+@media (max-width: 767.98px) {
+  .create-meeting-form-group {
+    margin-bottom: 2rem;
+  }
+
+  .create-meeting-question {
+    font-size: 2.25rem;
+  }
+
+  .vw-time-range-row {
+    margin-bottom: 14rem;
+    padding-bottom: 3rem;
+  }
+
+  .vw-time-dropdown,
+  .vw-time-trigger {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .vw-time-panel {
+    min-width: 100%;
+    width: 100%;
+  }
+
+  .vw-time-separator {
+    min-height: auto;
+    padding: 0.15rem 0 0.3rem;
+  }
+
+  .vw-timezone-pill {
+    min-height: 56px;
+  }
 }
