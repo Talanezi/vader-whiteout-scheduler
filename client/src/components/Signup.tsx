@@ -138,6 +138,8 @@ function SignupForm({
       name: name.trim(),
       email: email.trim(),
       password,
+      department,
+      role,
     } as any);
   };
 
