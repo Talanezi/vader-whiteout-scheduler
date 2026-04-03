@@ -13,6 +13,12 @@ export default class UserResponse {
   @ApiProperty()
   isSubscribedToNotifications: boolean;
 
+  @ApiProperty({ required: false, nullable: true, example: 'Production' })
+  department?: string | null;
+
+  @ApiProperty({ required: false, nullable: true, example: 'Executive Producer' })
+  role?: string | null;
+
   @ApiProperty()
   hasLinkedGoogleAccount: boolean;
 
@@ -22,8 +28,7 @@ export default class UserResponse {
 
 export class UserResponseWithToken extends UserResponse {
   @ApiProperty({
-    description:
-      'A bearer token to be used in the Authorization header for future requests',
+    description: 'A bearer token to be used in the Authorization header for future requests',
   })
   token: string;
 }

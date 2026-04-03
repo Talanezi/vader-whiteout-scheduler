@@ -520,3 +520,19 @@ html[data-theme="light"] .text-danger {
     padding-inline: 10px !important;
   }
 }
+
+
+.signupForm .form-label {
+  color: var(--ink);
+  font-weight: 700;
+  margin-bottom: 0.45rem;
+}
+
+.signupForm .form-select {
+  min-height: 48px;
+}
+
+.signupForm .form-control,
+.signupForm .form-select {
+  border-radius: 14px !important;
+}

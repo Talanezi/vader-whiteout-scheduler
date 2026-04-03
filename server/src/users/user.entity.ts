@@ -19,9 +19,6 @@ export default class User {
   @Column({ nullable: true })
   PasswordHash?: string;
 
-  // Seconds since Unix epoch
-  // If a token's 'iat' value is less than this number, then the token
-  // is invalid
   @Column({ nullable: true })
   TimestampOfEarliestValidToken: number;
 
@@ -34,6 +31,12 @@ export default class User {
 
   @Column({ default: false })
   IsSubscribedToNotifications: boolean;
+
+  @Column({ nullable: true })
+  Department?: string;
+
+  @Column({ nullable: true })
+  Role?: string;
 
   @OneToMany(() => MeetingRespondent, (respondent) => respondent.User)
   Respondents: MeetingRespondent[];

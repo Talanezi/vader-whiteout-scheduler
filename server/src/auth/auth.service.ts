@@ -104,11 +104,15 @@ export default class AuthService {
     email,
     password,
     subscribe_to_notifications,
+    department,
+    role,
   }: LocalSignupDto): Promise<User> {
     const user: Partial<User> = {
       Name: name,
       Email: email,
       IsSubscribedToNotifications: subscribe_to_notifications,
+      Department: department,
+      Role: role,
       PasswordHash: await bcrypt.hash(password, SALT_ROUNDS),
     };
     return this.usersService.create(user);

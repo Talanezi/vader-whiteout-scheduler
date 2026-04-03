@@ -7,7 +7,12 @@ import {
   MaxLength,
   IsBoolean,
   IsOptional,
+  IsIn,
 } from 'class-validator';
+import {
+  ALL_PRODUCTION_ROLES,
+  PRODUCTION_DEPARTMENTS,
+} from '../users/production-roles';
 
 export default class LocalSignupDto {
   @ApiProperty({ example: 'John Doe' })
@@ -29,4 +34,14 @@ export default class LocalSignupDto {
   @IsBoolean()
   @IsOptional()
   subscribe_to_notifications?: boolean;
+
+  @ApiProperty({ example: 'Production', enum: PRODUCTION_DEPARTMENTS })
+  @IsString()
+  @IsIn(PRODUCTION_DEPARTMENTS)
+  department: string;
+
+  @ApiProperty({ example: 'Executive Producer', enum: ALL_PRODUCTION_ROLES })
+  @IsString()
+  @IsIn(ALL_PRODUCTION_ROLES)
+  role: string;
 }

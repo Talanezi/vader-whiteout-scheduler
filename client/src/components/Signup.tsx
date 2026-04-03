@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomOverlay from 'components/BottomOverlay';
@@ -12,19 +12,25 @@ import VerifyEmailAddress from './SignupConfirmation';
 import WaitForServerInfo from './WaitForServerInfo';
 import OAuth2ProviderButtons from './OAuth2ProviderButtons';
 import useSetTitle from 'utils/title.hook';
+import { useAppDispatch } from 'app/hooks';
+import { setToken } from 'slices/authentication';
+import { setLocalToken } from 'utils/auth.utils';
+import {
+  PRODUCTION_DEPARTMENTS,
+  ProductionDepartment,
+  rolesForDepartment,
+} from 'utils/productionRoles';
 
 export default function Signup() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [department, setDepartment] = useState<ProductionDepartment | ''>('');
+  const [role, setRole] = useState('');
   const [shouldShowVerificationPage, setShouldShowVerificationPage] = useState(false);
   const navigate = useNavigate();
-  const {lastNonAuthPath} = useContext(HistoryContext);
-  // Ref is used to avoid creating a new callback after the redirect, which would
-  // force the child components to re-render
-  // TODO: encapsulate this in a separate hook
+  const { lastNonAuthPath } = useContext(HistoryContext);
   const lastNonAuthPathRef = useRef('/');
-
   useSetTitle('Signup');
 
   useEffect(() => {
@@ -38,177 +44,236 @@ export default function Signup() {
   if (shouldShowVerificationPage) {
     return <VerifyEmailAddress email={email} />;
   }
+
   return (
     <WaitForServerInfo>
       <div className={styles.signupContainer}>
-        <SignupForm {...{
-          name, setName, email, setEmail, password, setPassword,
-          setShouldShowVerificationPage, redirectAfterSuccessfulSignup,
-        }} />
+        <SignupForm
+          name={name}
+          setName={setName}
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          department={department}
+          setDepartment={setDepartment}
+          role={role}
+          setRole={setRole}
+          setShouldShowVerificationPage={setShouldShowVerificationPage}
+          redirectAfterSuccessfulSignup={redirectAfterSuccessfulSignup}
+        />
         <WhyShouldISignUp />
       </div>
     </WaitForServerInfo>
   );
-};
+}
 
 function SignupForm({
-  name, setName,
-  email, setEmail,
-  password, setPassword,
+  name,
+  setName,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  department,
+  setDepartment,
+  role,
+  setRole,
   setShouldShowVerificationPage,
   redirectAfterSuccessfulSignup,
 }: {
-  name: string, setName: (s: string) => void,
-  email: string, setEmail: (s: string) => void,
-  password: string, setPassword: (s: string) => void,
-  setShouldShowVerificationPage: (b: boolean) => void,
-  redirectAfterSuccessfulSignup: () => void,
+  name: string;
+  setName: (s: string) => void;
+  email: string;
+  setEmail: (s: string) => void;
+  password: string;
+  setPassword: (s: string) => void;
+  department: ProductionDepartment | '';
+  setDepartment: (s: ProductionDepartment | '') => void;
+  role: string;
+  setRole: (s: string) => void;
+  setShouldShowVerificationPage: (b: boolean) => void;
+  redirectAfterSuccessfulSignup: () => void;
 }) {
-  const [validated, setValidated] = useState(false);
-  const [signup, {data, isLoading, isSuccess, error}] = useMutationWithPersistentError(useSignupMutation);
-  let onSubmit: React.FormEventHandler<HTMLFormElement> | undefined;
-  const submitBtnDisabled = isLoading;
-  if (!submitBtnDisabled) {
-    onSubmit = (ev) => {
-      ev.preventDefault();
-      const form = ev.currentTarget;
-      if (form.checkValidity()) {
-        signup({
-          name,
-          email,
-          password,
-        });
-      } else {
-        setValidated(true);
-      }
-    };
-  }
+  const [signup, { data, isLoading, error }] = useMutationWithPersistentError(useSignupMutation);
+  const dispatch = useAppDispatch();
+  const errorMessageElemRef = useRef<HTMLParagraphElement>(null);
+  const roleOptions = useMemo(() => rolesForDepartment(department), [department]);
 
   useEffect(() => {
-    if (isSuccess) {
-      if (isVerifyEmailAddressResponse(data!)) {
-        setShouldShowVerificationPage(true);
-      } else {
-        redirectAfterSuccessfulSignup();
-      }
+    if (!department) {
+      setRole('');
+      return;
     }
-  }, [
-    data, isSuccess,
-    setShouldShowVerificationPage, redirectAfterSuccessfulSignup,
-  ]);
+    if (role && !roleOptions.includes(role)) {
+      setRole('');
+    }
+  }, [department, role, roleOptions, setRole]);
+
+  useEffect(() => {
+    if (!data) return;
+    if (isVerifyEmailAddressResponse(data)) {
+      setShouldShowVerificationPage(true);
+      return;
+    }
+    if ('token' in (data as any)) {
+      const token = (data as any).token;
+      setLocalToken(token);
+      dispatch(setToken(token));
+    }
+    redirectAfterSuccessfulSignup();
+  }, [data, dispatch, redirectAfterSuccessfulSignup, setShouldShowVerificationPage]);
+
+  useEffect(() => {
+    if (error && errorMessageElemRef.current) {
+      errorMessageElemRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [error]);
+
+  const onSubmit: React.FormEventHandler<HTMLFormElement> = (ev) => {
+    ev.preventDefault();
+    if (!name.trim() || !email.trim() || !password.trim() || !department || !role) {
+      return;
+    }
+    signup({
+      name: name.trim(),
+      email: email.trim(),
+      password,
+      department,
+      role,
+    } as any);
+  };
+
+  const isDisabled =
+    !name.trim() ||
+    !email.trim() ||
+    !password.trim() ||
+    !department ||
+    !role ||
+    isLoading;
 
   return (
-    <Form noValidate className={styles.signupForm} {...{validated, onSubmit}}>
-      <h4 className="mb-5">Sign up</h4>
+    <div className={styles.signupForm}>
+      <h2 className="vw-simple-heading mb-4">Join the production</h2>
+
       <OAuth2ProviderButtons reason="signup" />
-      <Form.Group controlId="signup-form-name">
-        <Form.Label>Name</Form.Label>
-        <Form.Control
-          required
-          placeholder="What's your name?"
-          minLength={1}
-          className="form-text-input"
-          value={name}
-          onChange={(ev) => setName(ev.target.value)}
-        />
-        <Form.Control.Feedback type="invalid">Please enter a name.</Form.Control.Feedback>
-      </Form.Group>
-      <Form.Group controlId="signup-form-email" className="mt-5">
-        <Form.Label>Email address</Form.Label>
-        <Form.Control
-          required
-          placeholder="What's your email address?"
-          type="email"
-          className="form-text-input"
-          value={email}
-          onChange={(ev) => setEmail(ev.target.value)}
-        />
-        <Form.Control.Feedback type="invalid">
-          Please enter a valid email address.
-        </Form.Control.Feedback>
-      </Form.Group>
-      <Form.Group controlId="signup-form-password" className="mt-5">
-        <Form.Label>Password</Form.Label>
-        <Form.Control
-          required
-          minLength={6}
-          maxLength={30}
-          placeholder="What would you like your password to be?"
-          type="password"
-          className="form-text-input"
-          value={password}
-          onChange={(ev) => setPassword(ev.target.value)}
-        />
-        <Form.Control.Feedback type="invalid">
-          Password must be between 6-30 characters.
-        </Form.Control.Feedback>
-      </Form.Group>
-      {error && (
-        <p className="text-danger text-center mb-0 mt-3">
-          An error occurred: {getReqErrorMessage(error)}
-        </p>
-      )}
-      <SignUpOrLogin disabled={submitBtnDisabled} />
-    </Form>
-  );
-}
 
-function SignUpOrLogin({ disabled } : { disabled: boolean }) {
-  return (
-    <>
-      <div className="d-none d-md-flex align-items-center justify-content-between mt-5">
-        <Link to="/login" className={`custom-link ${styles.alreadyHaveAccountLink}`}>
-          Already have an account?
-        </Link>
-        <ButtonWithSpinner
-          type="submit"
-          className="btn btn-outline-primary"
-          isLoading={disabled}
-        >
-          Sign up
-        </ButtonWithSpinner>
-      </div>
-      <BottomOverlay>
-        <Link to="/login" className={`custom-link custom-link-inverted ${styles.alreadyHaveAccountLink}`}>
-          Already have an account?
-        </Link>
-        <ButtonWithSpinner
-          type="submit"
-          className="btn btn-light ms-auto"
-          isLoading={disabled}
-        >
-          Sign up
-        </ButtonWithSpinner>
-      </BottomOverlay>
-    </>
+      <div className="my-4 text-center" style={{ color: 'var(--mute)' }}>or</div>
+
+      <Form onSubmit={onSubmit}>
+        <Form.Group className="mb-3">
+          <Form.Label>Full name</Form.Label>
+          <Form.Control
+            value={name}
+            onChange={(ev) => setName(ev.target.value)}
+            placeholder="Thamer Alanezi"
+            autoComplete="name"
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Email</Form.Label>
+          <Form.Control
+            value={email}
+            onChange={(ev) => setEmail(ev.target.value)}
+            placeholder="you@example.com"
+            type="email"
+            autoComplete="email"
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Password</Form.Label>
+          <Form.Control
+            value={password}
+            onChange={(ev) => setPassword(ev.target.value)}
+            placeholder="Create a password"
+            type="password"
+            autoComplete="new-password"
+          />
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Department</Form.Label>
+          <Form.Select
+            value={department}
+            onChange={(ev) => setDepartment(ev.target.value as ProductionDepartment | '')}
+          >
+            <option value="">Select department</option>
+            {PRODUCTION_DEPARTMENTS.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+
+        <Form.Group className="mb-3">
+          <Form.Label>Role</Form.Label>
+          <Form.Select
+            value={role}
+            onChange={(ev) => setRole(ev.target.value)}
+            disabled={!department}
+          >
+            <option value="">{department ? 'Select role' : 'Select department first'}</option>
+            {roleOptions.map((item) => (
+              <option key={item} value={item}>{item}</option>
+            ))}
+          </Form.Select>
+        </Form.Group>
+
+        <p className="mt-3 mb-4" style={{ color: 'var(--mute)', fontSize: '0.95rem' }}>
+          Your production role will be stored on your account so later passes can use it in crew views,
+          permissions, and availability display.
+        </p>
+
+        <div className="d-none d-md-flex align-items-center justify-content-between">
+          <Link className={styles.alreadyHaveAccountLink} to="/login">
+            Already have an account?
+          </Link>
+          <ButtonWithSpinner
+            className="btn btn-primary"
+            type="submit"
+            disabled={isDisabled}
+            isLoading={isLoading}
+          >
+            Sign up
+          </ButtonWithSpinner>
+        </div>
+
+        <BottomOverlay>
+          <Link className={styles.alreadyHaveAccountLink} to="/login">
+            Already have an account?
+          </Link>
+          <ButtonWithSpinner
+            className="btn btn-light ms-auto"
+            type="submit"
+            disabled={isDisabled}
+            isLoading={isLoading}
+          >
+            Sign up
+          </ButtonWithSpinner>
+        </BottomOverlay>
+
+        {error && (
+          <p
+            className="text-danger text-center mb-0 mt-3"
+            ref={errorMessageElemRef}
+          >
+            Could not sign up: {getReqErrorMessage(error)}
+          </p>
+        )}
+      </Form>
+    </div>
   );
 }
 
 function WhyShouldISignUp() {
   return (
     <div className={styles.whyShouldISignUp}>
-      <h4 className="mb-5">Why should I sign up?</h4>
-      <div>
-        <div className="text-primary">1&#41; Google calendar integration</div>
-        <p className="mt-2">
-          Check for conflicts with your Google calendar events when filling
-          out your availabilities.
-        </p>
-      </div>
-      <div className="mt-5">
-        <div className="text-primary">2&#41; All your meetings in one profile</div>
-        <p className="mt-2">
-          See all of the meetings which you've created or replied to from
-          your profile. Your can also update your meeting info after
-          creating it.
-        </p>
-      </div>
-      <div className="mt-5">
-        <div className="text-primary">3&#41; Notifications</div>
-        <p className="mt-2">
-          Get notified when a meeting to which you have responded has been scheduled.
-        </p>
-      </div>
+      <h3 className="vw-simple-heading mb-3">Why sign up?</h3>
+      <p style={{ color: 'var(--mute)', maxWidth: 420 }}>
+        Save your production identity, keep your department and role attached to your account,
+        and prepare the scheduler for responder permissions and reusable availability templates.
+      </p>
     </div>
-  )
+  );
 }

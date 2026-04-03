@@ -1,152 +1,151 @@
-cat > /workspaces/vader-whiteout-scheduler/client/src/components/MeetingForm/MeetingTimesPrompt.tsx <<'EOF'
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Form from 'react-bootstrap/Form';
-import { tzAbbr } from 'utils/dates.utils';
+import { to12HourClock, tzAbbr } from 'utils/dates.utils';
+import { range } from 'utils/arrays.utils';
 
-function toLabel(hour24: number) {
-  const normalized = ((hour24 % 24) + 24) % 24;
-  const suffix = normalized >= 12 ? 'pm' : 'am';
-  const hour12 = normalized % 12 === 0 ? 12 : normalized % 12;
-  return `${hour12} ${suffix}`;
-}
-
-function toPieces(hour24: number) {
-  const normalized = ((hour24 % 24) + 24) % 24;
-  return {
-    hour12: normalized % 12 === 0 ? 12 : normalized % 12,
-    meridiem: normalized >= 12 ? 'pm' : 'am',
-  } as const;
-}
-
-function fromPieces(hour12: number, meridiem: 'am' | 'pm') {
-  if (meridiem === 'am') {
-    return hour12 === 12 ? 0 : hour12;
-  }
-  return hour12 === 12 ? 12 : hour12 + 12;
-}
-
-function TimeDropdown({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (next: number) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-
-  const { hour12, meridiem } = useMemo(() => toPieces(value), [value]);
-
-  useEffect(() => {
-    const onDocClick = (ev: MouseEvent) => {
-      if (!rootRef.current) return;
-      if (!rootRef.current.contains(ev.target as Node)) {
-        setOpen(false);
-      }
-    };
-    document.addEventListener('mousedown', onDocClick);
-    return () => document.removeEventListener('mousedown', onDocClick);
-  }, []);
-
-  useEffect(() => {
-    if (!open || !rootRef.current) return;
-
-    const el = rootRef.current;
-    requestAnimationFrame(() => {
-      el.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-        inline: 'nearest',
-      });
-    });
-  }, [open]);
-
-  return (
-    <div className="vw-time-dropdown" ref={rootRef}>
-      <div className="vw-time-dropdown-label">{label}</div>
-
-      <button
-        type="button"
-        className="vw-time-trigger"
-        onClick={() => setOpen(prev => !prev)}
-      >
-        <span className="vw-time-trigger-value">{toLabel(value)}</span>
-        <span className="vw-time-trigger-icon">{open ? '−' : '+'}</span>
-      </button>
-
-      {open && (
-        <div className="vw-time-panel">
-          <div className="vw-time-panel-top">{toLabel(value)}</div>
-          <div className="vw-time-panel-body">
-            <ul className="vw-time-hours" role="listbox" aria-label={`${label} hour`}>
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((h) => (
-                <li
-                  key={h}
-                  className={h === hour12 ? 'selected' : ''}
-                  onClick={() => onChange(fromPieces(h, meridiem))}
-                >
-                  {String(h).padStart(2, '0')}
-                </li>
-              ))}
-            </ul>
-
-            <ul className="vw-time-meridiem" role="listbox" aria-label={`${label} am pm`}>
-              {(['am', 'pm'] as const).map((m) => (
-                <li
-                  key={m}
-                  className={m === meridiem ? 'selected' : ''}
-                  onClick={() => onChange(fromPieces(hour12, m))}
-                >
-                  {m}
-                </li>
-              ))}
-            </ul>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
+// startTime and endTime use a 24-hour clock [0, 23]
 export default function MeetingTimesPrompt({
   startTime,
   setStartTime,
   endTime,
   setEndTime,
 }: {
-  startTime: number;
-  setStartTime: (time: number) => void;
-  endTime: number;
-  setEndTime: (time: number) => void;
+  startTime: number,
+  setStartTime: (time: number) => void,
+  endTime: number,
+  setEndTime: (time: number) => void,
 }) {
-  const timezoneText = tzAbbr;
-
   return (
-    <Form.Group className="create-meeting-form-group">
-      <Form.Label className="create-meeting-question">
-        What time window should people consider?
-      </Form.Label>
-
-      <div className="vw-time-range-row">
-        <TimeDropdown
-          label="Start"
-          value={startTime}
-          onChange={setStartTime}
+    <fieldset className="create-meeting-form-group">
+      <legend className="create-meeting-question">Between which times would you like to meet?</legend>
+      <div className="d-flex align-items-center">
+        <TimePicker
+          hour={startTime}
+          setHour={setStartTime}
+          label="Minimum start time"
+          popupID="start-time-popup"
         />
-
-        <div className="vw-time-separator">to</div>
-
-        <TimeDropdown
-          label="End"
-          value={endTime}
-          onChange={setEndTime}
+        <p className="py-0 px-3 m-0">to</p>
+        <TimePicker
+          hour={endTime}
+          setHour={setEndTime}
+          label="Maximum end time"
+          popupID="end-time-popup"
         />
-
-        <div className="vw-timezone-pill">{timezoneText}</div>
+        <p className="py-0 ps-3 m-0">{tzAbbr}</p>
       </div>
-    </Form.Group>
+    </fieldset>
   );
 }
-EOF
+
+function TimePicker({
+  hour: hour24,  // [0, 23]
+  setHour: setHour24,
+  label,
+  popupID,
+}: {
+  hour: number,
+  setHour: (val: number) => void,
+  label: string,
+  popupID: string,
+}) {
+  const [show, setShow] = useState(false);
+  const inputOrPickerClicked = useRef(false);
+  useEffect(() => {
+    const listener = () => {
+      if (inputOrPickerClicked.current) {
+        // Click happened inside of the input or picker
+        // Open the picker or keep it open
+        setShow(true);
+        inputOrPickerClicked.current = false;
+      } else {
+        // Click happened outside of the input or picker
+        // Close the picker if it was open
+        setShow(false);
+      }
+    };
+    document.body.addEventListener('click', listener);
+    return () => {
+      document.body.removeEventListener('click', listener);
+    };
+  }, []);
+  // Use useRef instead of useState because the setHour12 callback would sometimes
+  // use a stale value
+  const hourSuffix = useRef<'am' | 'pm'>(hour24 < 12 ? 'am' : 'pm');
+  const setHour12 = (hour12: number) => {
+    if (hourSuffix.current === 'am') {
+      setHour24(hour12 === 12 ? 0 : hour12);
+    } else {
+      setHour24(hour12 === 12 ? 12 : hour12 + 12);
+    }
+  };
+  const hour12 = to12HourClock(hour24);  // [1, 12]
+  const setHourSuffix = (suffix: 'am' | 'pm') => {
+    hourSuffix.current = suffix;
+    // update the parent's state
+    setHour12(hour12);
+  };
+  const text = hour12 + ' ' + hourSuffix.current;
+  // TODO: support keyboard controls
+  return (
+    <div className="position-relative">
+      <Form.Control
+        value={text}
+        readOnly
+        onClick={() => { inputOrPickerClicked.current = true; }}
+        role="combobox"
+        aria-expanded={show ? 'true' : 'false'}
+        aria-label={label}
+        aria-haspopup="dialog"
+        aria-controls={popupID}
+      />
+      <div
+        // Make the picker grow upwards (via bottom: 0) instead of downwards so that
+        // the bottom of the picker isn't touching the bottom of the viewport
+        className={"position-absolute bottom-0 start-0 meeting-times-picker" + (show ? '' : ' d-none')}
+        onClick={() => { inputOrPickerClicked.current = true; }}
+        role="dialog"
+        id={popupID}
+      >
+        <div className="meeting-times-picker-top">{text}</div>
+        <div className="d-flex">
+          {/* TODO: use radio buttons instead (with appearance: none) */}
+          <ol
+            className="flex-grow-1 meeting-times-picker-left"
+            role="listbox"
+            aria-label="Pick an hour"
+          >
+            {range(1, 13).map(i => (
+              <li
+                key={i}
+                className={i === hour12 ? 'selected' : ''}
+                onClick={() => setHour12(i)}
+                role="option"
+                aria-selected={i === hour12}
+              >
+                {String(i).padStart(2, '0')}
+              </li>
+            ))}
+          </ol>
+          <ol
+            className="flex-grow-1 meeting-times-picker-right"
+            role="listbox"
+            aria-label="Pick AM or PM"
+          >
+            {(['am', 'pm'] as const).map(suffix => (
+              <li
+                key={suffix}
+                className={suffix === hourSuffix.current ? 'selected' : ''}
+                onClick={() => setHourSuffix(suffix)}
+                role="option"
+                aria-selected={suffix === hourSuffix.current}
+              >
+                {suffix}
+              </li>
+            ))}
+          </ol>
+        </div>
+      </div>
+    </div>
+  );
+}
