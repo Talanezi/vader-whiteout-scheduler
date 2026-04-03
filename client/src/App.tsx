@@ -4,6 +4,7 @@ import Navbar from 'react-bootstrap/Navbar';
 import { LinkContainer } from 'react-router-bootstrap';
 import {
   HashRouter,
+  Navigate,
   Outlet,
   Route,
   Routes,
@@ -53,9 +54,10 @@ export default function App() {
               <Route index element={dayPicker} />
               <Route path="create" element={dayPicker} />
               <Route path="m/:id" element={<Meeting />} />
-              <Route path="crew" element={<CrewRoute />} />
+
               <Route path="signup" element={<Signup />} />
               <Route path="login" element={<Login />} />
+
               <Route
                 path="confirm-link-google-account"
                 element={<ConfirmLinkExternalCalendar provider="google" />}
@@ -71,10 +73,13 @@ export default function App() {
               <Route path="feedback" element={<Feedback />} />
               <Route path="terms-of-service" element={<TermsOfService />} />
               <Route path="error" element={<ErrorPage />} />
+
               <Route path="me">
                 <Route index element={<Profile />} />
                 <Route path="settings" element={<Settings />} />
               </Route>
+
+              <Route path="crew" element={<Navigate to="/me" replace />} />
               <Route path="*" element={<h3 className="vw-simple-heading">Page not found</h3>} />
             </Route>
           </Routes>
@@ -88,6 +93,7 @@ function AppRoot() {
   useExtractTokenFromQueryParams();
   useGetSelfInfoIfTokenIsPresent();
 
+  const isLoggedIn = useAppSelector(selectTokenIsPresent);
   const [theme, setTheme] = useStoredTheme();
 
   useEffect(() => {
@@ -109,8 +115,16 @@ function AppRoot() {
           </LinkContainer>
 
           <Nav className="vw-nav-links">
-            <NavItem to="/" label="Schedule" />
-            <NavItem to="/crew" label="Crew" />
+            <NavItem to="/" label="Meetings" />
+            {isLoggedIn ? (
+              <NavItem to="/me" label="My Page" />
+            ) : (
+              <>
+                <NavItem to="/signup" label="Sign Up" />
+                <NavItem to="/login" label="Log In" />
+              </>
+            )}
+
             <button
               type="button"
               className="btn vw-theme-toggle"
@@ -141,11 +155,6 @@ function NavItem({ to, label }: { to: string; label: string }) {
       <Nav.Link className="vw-nav-link">{label}</Nav.Link>
     </LinkContainer>
   );
-}
-
-function CrewRoute() {
-  const isLoggedIn = useAppSelector(selectTokenIsPresent);
-  return isLoggedIn ? <Profile /> : <Signup />;
 }
 
 function useStoredTheme(): [ThemeMode, (theme: ThemeMode) => void] {
