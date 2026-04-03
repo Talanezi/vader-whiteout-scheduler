@@ -10,7 +10,6 @@ import { HistoryContext } from './HistoryProvider';
 import { isVerifyEmailAddressResponse } from 'slices/enhancedApi';
 import VerifyEmailAddress from './SignupConfirmation';
 import WaitForServerInfo from './WaitForServerInfo';
-import OAuth2ProviderButtons from './OAuth2ProviderButtons';
 import useSetTitle from 'utils/title.hook';
 import { useAppDispatch } from 'app/hooks';
 import { setToken } from 'slices/authentication';
@@ -154,20 +153,14 @@ function SignupForm({
 
   return (
     <div className={styles.signupForm}>
-      <h2 className="vw-simple-heading mb-4">Join the production</h2>
-
-      <OAuth2ProviderButtons reason="signup" />
-
-      <div className="my-4 text-center" style={{ color: 'var(--mute)' }}>or</div>
-
       <Form onSubmit={onSubmit}>
         <Form.Group className="mb-3">
           <Form.Label>Full name</Form.Label>
           <Form.Control
             value={name}
             onChange={(ev) => setName(ev.target.value)}
-            placeholder="Thamer Alanezi"
-            autoComplete="name"
+            placeholder="Full name"
+            autoComplete="off"
           />
         </Form.Group>
 

@@ -9,7 +9,7 @@ import {
   Route,
   Routes,
 } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import './App.scss';
 import './custom.css';
 import 'common/common.css';
@@ -37,10 +37,6 @@ import {
   useExtractTokenFromQueryParams,
   useGetSelfInfoIfTokenIsPresent,
 } from 'utils/auth.hooks';
-
-type ThemeMode = 'dark' | 'light';
-
-const THEME_KEY = 'vw_scheduler_theme';
 
 export default function App() {
   const dayPicker = <DayPicker />;
@@ -94,17 +90,9 @@ function AppRoot() {
   useGetSelfInfoIfTokenIsPresent();
 
   const isLoggedIn = useAppSelector(selectTokenIsPresent);
-  const [theme, setTheme] = useStoredTheme();
-
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
-
-  const themeIcon = useMemo(() => {
-    return theme === 'light'
-      ? 'https://www.svgrepo.com/show/432507/light-mode.svg'
-      : 'https://i.postimg.cc/63Mr6Vgt/output-onlinepngtools-3.png';
-  }, [theme]);
+    document.documentElement.setAttribute('data-theme', 'dark');
+  }, []);
 
   return (
     <div className="App vw-app-shell d-flex flex-column">
@@ -124,18 +112,6 @@ function AppRoot() {
                 <NavItem to="/login" label="Log In" />
               </>
             )}
-
-            <button
-              type="button"
-              className="btn vw-theme-toggle"
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              aria-label={theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode'}
-            >
-              <img
-                src={themeIcon}
-                alt={theme === 'light' ? 'Light mode icon' : 'Dark mode icon'}
-              />
-            </button>
           </Nav>
         </Container>
       </Navbar>
@@ -157,26 +133,3 @@ function NavItem({ to, label }: { to: string; label: string }) {
   );
 }
 
-function useStoredTheme(): [ThemeMode, (theme: ThemeMode) => void] {
-  const readInitial = (): ThemeMode => {
-    try {
-      const saved = localStorage.getItem(THEME_KEY);
-      return saved === 'light' ? 'light' : 'dark';
-    } catch {
-      return 'dark';
-    }
-  };
-
-  const [theme, setThemeState] = useState<ThemeMode>(readInitial);
-
-  const setTheme = (next: ThemeMode) => {
-    setThemeState(next);
-    try {
-      localStorage.setItem(THEME_KEY, next);
-    } catch {
-      // ignore
-    }
-  };
-
-  return [theme, setTheme];
-}
