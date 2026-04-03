@@ -54,6 +54,8 @@ export function UserToUserResponse(user: User): UserResponse {
     name: user.Name,
     email: user.Email,
     isSubscribedToNotifications: user.IsSubscribedToNotifications,
+    department: user.Department ?? null,
+    role: user.Role ?? null,
     hasLinkedGoogleAccount: user.GoogleOAuth2?.LinkedCalendar ?? false,
     hasLinkedMicrosoftAccount: user.MicrosoftOAuth2?.LinkedCalendar ?? false,
   };
