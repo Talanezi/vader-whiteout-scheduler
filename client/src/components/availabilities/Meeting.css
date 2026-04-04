@@ -21,27 +21,32 @@
   user-select: none;
   text-align: left;
   position: relative;
-  box-shadow: inset -1px -1px 0 rgba(255, 255, 255, 0.32);
+}
+
+/* real visible grid */
+.weeklyview__bodycell::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-right: 1px solid rgba(255, 255, 255, 0.24);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.24);
 }
 
 .weeklyview__bodycell_firstrow {
-  border-top: 2px solid rgba(255, 255, 255, 0.88);
+  border-top: 2px solid rgba(255, 255, 255, 0.82);
 }
 
 .weeklyview__bodycell_firstcol {
-  border-left: 2px solid rgba(255, 255, 255, 0.88);
+  border-left: 2px solid rgba(255, 255, 255, 0.82);
 }
 
-.weeklyview__bodycell_lastcol {
-  box-shadow: inset -2px -1px 0 rgba(255, 255, 255, 0.88);
+.weeklyview__bodycell_lastcol::after {
+  border-right: 2px solid rgba(255, 255, 255, 0.82);
 }
 
-.weeklyview__bodycell_lastrow {
-  box-shadow: inset -1px -2px 0 rgba(255, 255, 255, 0.88);
-}
-
-.weeklyview__bodycell_lastrow.weeklyview__bodycell_lastcol {
-  box-shadow: inset -2px -2px 0 rgba(255, 255, 255, 0.88);
+.weeklyview__bodycell_lastrow::after {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.82);
 }
 
 .weeklyview__bodycell.selected {
@@ -60,9 +65,9 @@
   cursor: ns-resize;
 }
 
-.weeklyview__bodycell:hover {
-  outline: 2px dashed rgba(255, 255, 255, 0.88);
-  outline-offset: -2px;
+.weeklyview__bodycell:hover::after {
+  border: 2px dashed rgba(255, 255, 255, 0.88);
+  z-index: unset;
 }
 
 .weeklyview__bodycell_scheduled_inner {
@@ -100,8 +105,6 @@
 
 .weeklyview-grid {
   text-align: right;
-  border-right: 2px solid rgba(255, 255, 255, 0.88);
-  border-bottom: 2px solid rgba(255, 255, 255, 0.88);
 }
 
 .weeklyview__hourcell {
@@ -158,8 +161,3 @@
   color: var(--custom-primary);
   cursor: pointer;
 }
-
-
-
-
-
