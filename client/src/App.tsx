@@ -47,7 +47,7 @@ export default function App() {
         <WaitForServerInfo>
           <Routes>
             <Route path="/" element={<AppRoot />}>
-              <Route index element={dayPicker} />
+              <Route index element={<MeetingsHome />} />
               <Route path="create" element={dayPicker} />
               <Route path="m/:id" element={<Meeting />} />
 
@@ -121,6 +121,29 @@ function AppRoot() {
       </main>
 
       <BottomOverlayFiller />
+    </div>
+  );
+}
+
+function MeetingsHome() {
+  const isLoggedIn = useAppSelector(selectTokenIsPresent);
+
+  return (
+    <div className="vw-home d-flex flex-column align-items-center justify-content-center text-center flex-grow-1">
+      <h2 className="vw-simple-heading mb-3">Meetings</h2>
+      <p className="mb-4" style={{ color: 'var(--mute)', maxWidth: 640 }}>
+        View your scheduling hub and create new availability requests for the production.
+      </p>
+      <div className="d-flex gap-3 flex-wrap justify-content-center">
+        <LinkContainer to="/create">
+          <button className="btn btn-primary">Create Meeting</button>
+        </LinkContainer>
+        {isLoggedIn && (
+          <LinkContainer to="/me">
+            <button className="btn btn-outline-primary">Go to My Page</button>
+          </LinkContainer>
+        )}
+      </div>
     </div>
   );
 }

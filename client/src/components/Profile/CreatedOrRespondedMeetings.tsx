@@ -43,7 +43,7 @@ export default function CreatedMeetings({showCreatedMeetings}: {showCreatedMeeti
         </p>
         {
           showCreatedMeetings && (
-            <Link to="/" className="d-block mt-4 text-decoration-none">
+            <Link to="/create" className="d-block mt-4 text-decoration-none">
               <button className="btn btn-primary d-block mx-auto">
                 Create a meeting
               </button>

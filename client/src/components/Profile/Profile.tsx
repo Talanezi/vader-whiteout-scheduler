@@ -48,7 +48,7 @@ export default function Profile() {
   return (
     <div className="flex-grow-1 d-flex flex-column">
       <Heading />
-      <CreatedRespondedToggle {...{seeCreatedMeetings, setSeeCreatedMeetings}} />
+      <div className={styles.createdRespondedWrap}><CreatedRespondedToggle {...{seeCreatedMeetings, setSeeCreatedMeetings}} /></div>
       <div className="flex-grow-1 d-flex flex-column align-items-center">
         <CreatedOrRespondedMeetings showCreatedMeetings={seeCreatedMeetings} />
       </div>
@@ -136,7 +136,7 @@ function CreatedRespondedToggle({
   const onRespondedClick = () => setSeeCreatedMeetings(false);
   return (
     <ButtonGroup
-      className="d-flex justify-content-center mt-5"
+      className={`d-flex justify-content-center ${styles.createdRespondedGroup}`}
       aria-label="Choose created or responded meetings"
     >
       <NonFocusButton

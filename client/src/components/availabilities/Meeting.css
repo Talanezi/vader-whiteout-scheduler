@@ -13,8 +13,8 @@
 }
 
 .weeklyview__local_time_text {
-  color: gray;
-  font-size: 0.9em;
+  color: var(--mute);
+  font-size: 0.88em;
 }
 
 .weeklyview__bodycell {
@@ -41,11 +41,11 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  border-right: 1px solid lightgray;
+  border-right: 1px solid var(--line);
 }
 
 .weeklyview__bodycell_oddrow::after {
-  border-bottom: 1px solid lightgray;
+  border-bottom: 1px solid var(--line);
 }
 
 /*
@@ -53,19 +53,21 @@
   can't strike through a cell.
 */
 .weeklyview__bodycell_firstrow {
-  border-top: 1px solid lightgray;
+  border-top: 1px solid var(--line);
 }
 
 .weeklyview__bodycell_firstcol {
-  border-left: 1px solid lightgray;
+  border-left: 1px solid var(--line);
 }
 
 .weeklyview__bodycell.selected {
-  background-color: rgba(var(--custom-primary-rgb), 70%);
+  background-color: rgba(var(--custom-primary-rgb), 0.52);
+  box-shadow: inset 0 0 0 1px rgba(var(--custom-primary-rgb), 0.45);
 }
 
 .weeklyview__bodycell.scheduling {
-  background-color: rgba(var(--custom-scheduled-cell-rgb), 70%);
+  background-color: rgba(var(--custom-scheduled-cell-rgb), 0.62);
+  box-shadow: inset 0 0 0 1px rgba(var(--custom-scheduled-cell-rgb), 0.5);
 }
 
 .weeklyview__bodycell:hover {
@@ -83,25 +85,28 @@
     box-sizing: border-box), which will cause the external event boxes
     to change size because they use percentages for width and height.
   */
-  border: 2px dashed black;
+  border: 2px dashed rgba(var(--custom-primary-rgb), 0.8);
   z-index: unset;
 }
 
 .weeklyview__bodycell_scheduled_inner {
-  width: 80%;
-  left: 10%;
-  right: 10%;
+  width: 84%;
+  left: 8%;
+  right: 8%;
   font-size: 0.8em;
   color: white;
   background-color: var(--custom-scheduled-cell-color);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
   /* should be shown on top of other people's availabilities */
   z-index: 1;
 }
 
 .weeklyview__bodycell_external_event {
   width: 100%;
-  border-radius: 6px;
-  background-color: rgba(var(--custom-scheduled-cell-rgb), 70%);
+  border-radius: 8px;
+  background-color: rgba(var(--custom-scheduled-cell-rgb), 0.55);
+  border: 1px solid rgba(var(--custom-scheduled-cell-rgb), 0.45);
   padding-top: 0.3em;
   padding-left: 0.7em;
 }
