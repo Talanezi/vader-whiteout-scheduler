@@ -310,6 +310,7 @@ const Cell = React.memo(function Cell({
   if (colIdx === 0) classNames.push('weeklyview__bodycell_firstcol');
   if (rowIdx === numRows - 1) classNames.push('weeklyview__bodycell_lastrow');
   if (colIdx === numCols - 1) classNames.push('weeklyview__bodycell_lastcol');
+  if (rowIdx % 2 === 1) classNames.push('weeklyview__bodycell_oddrow');
 
   const style: Style = {gridArea: `c${cellIdx}`};
   let showRespondentsColour = false;
