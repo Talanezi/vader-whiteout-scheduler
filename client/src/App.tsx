@@ -21,6 +21,7 @@ import HistoryProvider from 'components/HistoryProvider';
 import Login from 'components/Login';
 import Signup from 'components/Signup';
 import Meeting from 'components/availabilities/Meeting';
+import MeetingsIndex from 'components/MeetingsIndex';
 import Profile from 'components/Profile';
 import Settings from 'components/Settings';
 import ConfirmLinkExternalCalendar from 'components/ConfirmLinkExternalCalendar';
@@ -50,7 +51,7 @@ export default function App() {
               <Route index element={dayPicker} />
               <Route path="create" element={dayPicker} />
               <Route path="m/:id" element={<Meeting />} />
-              <Route path="meetings" element={<h3 className="vw-simple-heading">Meetings page coming next</h3>} />
+              <Route path="meetings" element={<MeetingsIndex />} />
 
               <Route path="signup" element={<Signup />} />
               <Route path="login" element={<Login />} />

@@ -79,6 +79,15 @@ export default class MeetingsService {
     return meeting;
   }
 
+  getAllMeetings(): Promise<Meeting[]> {
+    return this.meetingsRepository.find({
+      order: {
+        ScheduledStartDateTime: "DESC",
+        ID: "DESC",
+      },
+    });
+  }
+
   private _getMeetingWithRespondents() {
     return this.meetingsRepository
       .createQueryBuilder()

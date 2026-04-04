@@ -60,6 +60,32 @@ const modifyMeetingAuthzDoc =
   'If the meeting was created by a registed user, then ' +
   'the client must be logged in as that user.';
 
+function compareMeetingShortResponses(
+  a: MeetingShortResponse,
+  b: MeetingShortResponse,
+): number {
+  const now = Date.now();
+  const aCurrent = a.scheduledStartDateTime
+    ? Date.parse(a.scheduledStartDateTime) >= now
+    : true;
+  const bCurrent = b.scheduledStartDateTime
+    ? Date.parse(b.scheduledStartDateTime) >= now
+    : true;
+
+  if (aCurrent !== bCurrent) {
+    return aCurrent ? -1 : 1;
+  }
+
+  const aTime = a.scheduledStartDateTime
+    ? Date.parse(a.scheduledStartDateTime)
+    : Date.parse(a.tentativeDates[0] || '9999-12-31');
+  const bTime = b.scheduledStartDateTime
+    ? Date.parse(b.scheduledStartDateTime)
+    : Date.parse(b.tentativeDates[0] || '9999-12-31');
+
+  return aTime - bTime;
+}
+
 export function meetingToMeetingShortResponse(
   meeting: Meeting,
 ): MeetingShortResponse {
@@ -217,6 +243,20 @@ export class MeetingsController {
   }
 
   @ApiOperation({
+    summary: 'List all meetings',
+    operationId: 'getAllMeetings',
+  })
+  @Get()
+  async getAllMeetings(): Promise<{ meetings: MeetingShortResponse[] }> {
+    const meetings = await this.meetingsService.getAllMeetings();
+    return {
+      meetings: meetings
+        .map(meetingToMeetingShortResponse)
+        .sort(compareMeetingShortResponses),
+    };
+  }
+
+  @ApiOperation({
     summary: 'Create a meeting',
     description:
       'Create a new meeting. If the client is authenticated when executing this request,' +
@@ -250,8 +290,6 @@ export class MeetingsController {
     }
     partialMeeting.About ??= '';
     const meeting = await this.meetingsService.createMeeting(partialMeeting);
-    // Normally we would do a left join to get the respondents
-    // Since we just created the meeting, this field will be undefined
     meeting.Respondents = [];
     return meetingToMeetingResponse(meeting, maybeUser);
   }

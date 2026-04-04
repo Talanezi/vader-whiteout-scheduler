@@ -26,6 +26,10 @@ const replacedApi = api.injectEndpoints({
       query: (queryArg) => ({ url: `/api/meetings/${queryArg}` }),
       transformResponse: transformMeetingResponse,
     }),
+    getAllMeetings: build.query<TransformedMeetingsShortResponse, void>({
+      query: () => ({ url: `/api/meetings` }),
+      transformResponse: transformMeetingsShortResponse,
+    }),
     getCreatedMeetings: build.query<TransformedMeetingsShortResponse, GetCreatedMeetingsApiArg>({
       query: () => ({ url: `/api/me/created-meetings` }),
       transformResponse: transformMeetingsShortResponse,
@@ -48,8 +52,10 @@ const replacedApi = api.injectEndpoints({
   }),
   overrideExisting: true,
 });
+
 export const {
   useGetMeetingQuery,
+  useGetAllMeetingsQuery,
   useGetCreatedMeetingsQuery,
   useGetRespondedMeetingsQuery,
   useConfirmPasswordResetMutation,
@@ -91,8 +97,6 @@ export const enhancedApi = replacedApi.enhanceEndpoints({
     },
     editUser: {
       onQueryStarted: (arg, api) => editUser_onQueryStarted(arg, api),
-      // If a user changed their name, the respondents data for a meeting
-      // could now be invalid
       invalidatesTags: ['meeting'],
     },
     confirmLinkGoogleAccount: {
@@ -108,8 +112,9 @@ export const enhancedApi = replacedApi.enhanceEndpoints({
       onQueryStarted: (arg, api) => editUser_onQueryStarted(arg, api),
     },
     getMeeting: {
-      providesTags: (result, error, arg) => [{type: 'meeting', id: arg}],
+      providesTags: (_result, _error, arg) => [{type: 'meeting', id: arg}],
     },
+    getAllMeetings: {},
     addGuestRespondent: {
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
@@ -154,10 +159,10 @@ export const enhancedApi = replacedApi.enhanceEndpoints({
       providesTags: ['respondedMeetings'],
     },
     getGoogleCalendarEvents: {
-      providesTags: (result, error, arg) => [{type: 'googleCalendarEvents', id: arg}],
+      providesTags: (_result, _error, arg) => [{type: 'googleCalendarEvents', id: arg}],
     },
     getMicrosoftCalendarEvents: {
-      providesTags: (result, error, arg) => [{type: 'microsoftCalendarEvents', id: arg}],
+      providesTags: (_result, _error, arg) => [{type: 'microsoftCalendarEvents', id: arg}],
     },
   },
 });
@@ -181,8 +186,6 @@ async function loginOrVerifyEmail_onQueryStarted(
   arg: unknown,
   {dispatch, queryFulfilled}: MutationLifecycleApi<unknown, any, UserResponseWithToken, 'api'>,
 ) {
-  // pessimistic update
-  // https://redux-toolkit.js.org/rtk-query/usage/manual-cache-updates#pessimistic-updates
   try {
     const {data} = await queryFulfilled;
     updateStoreForUserResponseWithToken(dispatch, data);
@@ -259,3 +262,5 @@ async function deleteMeeting_onQueryStarted(
     dispatch(setCurrentMeetingID(undefined));
   } catch {}
 }
+
+export type AppDispatch = ThunkDispatch<any, any, AnyAction>;
