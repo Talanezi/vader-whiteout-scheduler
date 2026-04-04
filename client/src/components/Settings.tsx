@@ -5,6 +5,7 @@ import { useAppSelector } from "app/hooks";
 import NonFocusButton from "components/NonFocusButton";
 import DeleteAccountModal from "./DeleteAccountModal";
 import {
+  selectToken,
   selectTokenIsPresent,
 } from "slices/authentication";
 import { assert, capitalize } from "utils/misc.utils";
@@ -164,8 +165,43 @@ function LinkedAccounts() {
 }
 
 function AppleCalendarAccount() {
-  const onClick = () => {
-    window.open('/api/me/apple-calendar.ics', '_blank');
+  const token = useAppSelector(selectToken);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const onClick = async () => {
+    if (!token) {
+      setError('You must be logged in.');
+      return;
+    }
+    try {
+      setIsLoading(true);
+      setError(null);
+      const resp = await fetch(
+        'https://vader-whiteout-scheduler-production.up.railway.app/api/me/apple-calendar.ics',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (!resp.ok) {
+        throw new Error(`HTTP ${resp.status}`);
+      }
+      const blob = await resp.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vader-whiteout-schedule.ics';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err?.message || 'Could not download Apple Calendar ICS.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -177,10 +213,14 @@ function AppleCalendarAccount() {
           className="btn btn-outline-primary w-100-md-down mt-3 mt-md-0"
           style={{minWidth: 'max-content'}}
           onClick={onClick}
+          disabled={isLoading}
         >
-          Download Apple Calendar ICS
+          {isLoading ? 'Downloading...' : 'Download Apple Calendar ICS'}
         </button>
       </div>
+      {error && (
+        <p className="text-danger text-center mb-0 mt-3">An error occurred: {error}</p>
+      )}
       <p className="mt-4">
         Download an Apple Calendar ICS file containing your scheduled meetings.
       </p>
