@@ -4,7 +4,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import BottomOverlay from 'components/BottomOverlay';
 import ButtonWithSpinner from 'components/ButtonWithSpinner';
 import { HistoryContext } from 'components/HistoryProvider';
-import OAuth2ProviderButtons from 'components/OAuth2ProviderButtons';
 import { useLoginMutation } from 'slices/api';
 import { getReqErrorMessage, useMutationWithPersistentError } from "utils/requests.utils";
 import styles from './Login.module.css';
@@ -64,7 +63,6 @@ function LoginForm() {
   return (
     <Form noValidate className={styles.loginForm} {...{validated, onSubmit}}>
       <h4 className="mb-5">Login</h4>
-      <OAuth2ProviderButtons reason="login" />
       <Form.Group controlId="login-form-email">
         <Form.Label>Email address</Form.Label>
         <Form.Control
