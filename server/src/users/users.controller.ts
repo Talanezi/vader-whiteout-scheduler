@@ -11,9 +11,11 @@ import {
   Patch,
   Post,
   Query,
+  Res,
   UseGuards,
 } from '@nestjs/common';
 import { ModuleRef } from '@nestjs/core';
+import type { Response } from 'express';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -33,6 +35,7 @@ import {
   CustomRedirectResponse,
 } from '../common-responses';
 import { meetingToMeetingShortResponse } from '../meetings/meetings.controller';
+import Meeting from '../meetings/meeting.entity';
 import MeetingsService from '../meetings/meetings.service';
 import { NoSuchMeetingError } from '../meetings/meetings.utils';
 import OAuth2Service from '../oauth2/oauth2.service';
@@ -59,6 +62,45 @@ export function UserToUserResponse(user: User): UserResponse {
     hasLinkedGoogleAccount: user.GoogleOAuth2?.LinkedCalendar ?? false,
     hasLinkedMicrosoftAccount: user.MicrosoftOAuth2?.LinkedCalendar ?? false,
   };
+}
+
+function escapeICS(text: string): string {
+  return text
+    .replace(/\\/g, '\\\\')
+    .replace(/;/g, '\\;')
+    .replace(/,/g, '\\,')
+    .replace(/\r?\n/g, '\\n');
+}
+
+function toICSDateTime(dateTime: string): string {
+  return new Date(dateTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+function meetingsToICS(meetings: Meeting[]): string {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Vader Whiteout//Scheduler//EN',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+
+  for (const meeting of meetings) {
+    if (!meeting.ScheduledStartDateTime || !meeting.ScheduledEndDateTime) continue;
+    lines.push('BEGIN:VEVENT');
+    lines.push(`UID:${meeting.Slug}@vaderwhiteout.com`);
+    lines.push(`DTSTAMP:${toICSDateTime(new Date().toISOString())}`);
+    lines.push(`DTSTART:${toICSDateTime(meeting.ScheduledStartDateTime)}`);
+    lines.push(`DTEND:${toICSDateTime(meeting.ScheduledEndDateTime)}`);
+    lines.push(`SUMMARY:${escapeICS(meeting.Name)}`);
+    if (meeting.About) {
+      lines.push(`DESCRIPTION:${escapeICS(meeting.About)}`);
+    }
+    lines.push('END:VEVENT');
+  }
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n') + '\r\n';
 }
 
 @ApiTags('me')
@@ -286,6 +328,48 @@ export class UsersController {
         endDateTime: event.end,
       })),
     };
+  }
+
+  @ApiOperation({
+    summary: 'Download Apple Calendar ICS feed',
+    description:
+      'Download an ICS file containing scheduled meetings created by or responded to by the logged in user.',
+    operationId: 'getAppleCalendarICS',
+  })
+  @Get('apple-calendar.ics')
+  async getAppleCalendarICS(
+    @AuthUser() user: User,
+    @Res() res: Response,
+  ) {
+    const [createdMeetings, respondedMeetings] = await Promise.all([
+      this.meetingsService.getMeetingsCreatedBy(user.ID),
+      this.meetingsService.getMeetingsRespondedToBy(user.ID),
+    ]);
+
+    const seen = new Set<number>();
+    const meetings = [...createdMeetings, ...respondedMeetings]
+      .filter((meeting) => {
+        if (!meeting.ScheduledStartDateTime || !meeting.ScheduledEndDateTime) {
+          return false;
+        }
+        if (seen.has(meeting.ID)) {
+          return false;
+        }
+        seen.add(meeting.ID);
+        return true;
+      })
+      .sort(
+        (a, b) =>
+          Date.parse(a.ScheduledStartDateTime!) -
+          Date.parse(b.ScheduledStartDateTime!),
+      );
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader(
+      'Content-Disposition',
+      'attachment; filename="vader-whiteout-schedule.ics"',
+    );
+    res.send(meetingsToICS(meetings));
   }
 
   @ApiOperation({

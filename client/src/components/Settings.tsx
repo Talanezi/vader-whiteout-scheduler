@@ -18,8 +18,6 @@ import {
   useLogoutMutation,
   useLinkGoogleCalendarMutation,
   useUnlinkGoogleCalendarMutation,
-  useLinkMicrosoftCalendarMutation,
-  useUnlinkMicrosoftCalendarMutation,
 } from "slices/api";
 import ButtonWithSpinner from "./ButtonWithSpinner";
 import { useGetSelfInfoIfTokenIsPresent } from "utils/auth.hooks";
@@ -160,12 +158,35 @@ function LinkedAccounts() {
         useLinkCalendarMutation={useLinkGoogleCalendarMutation}
         useUnlinkCalendarMutation={useUnlinkGoogleCalendarMutation}
       />
-      <LinkedAccount
-        provider="microsoft"
-        hasLinkedAccount={userInfo.hasLinkedMicrosoftAccount}
-        useLinkCalendarMutation={useLinkMicrosoftCalendarMutation}
-        useUnlinkCalendarMutation={useUnlinkMicrosoftCalendarMutation}
-      />
+      <AppleCalendarAccount />
+    </div>
+  );
+}
+
+function AppleCalendarAccount() {
+  const onClick = () => {
+    window.open('/api/me/apple-calendar.ics', '_blank');
+  };
+
+  return (
+    <div className="mt-4">
+      <div className="d-flex flex-wrap align-items-center justify-content-between">
+        <h5 className="text-primary">Apple</h5>
+        <button
+          type="button"
+          className="btn btn-outline-primary w-100-md-down mt-3 mt-md-0"
+          style={{minWidth: 'max-content'}}
+          onClick={onClick}
+        >
+          Download Apple Calendar ICS
+        </button>
+      </div>
+      <p className="mt-4">
+        Download an Apple Calendar ICS file containing your scheduled meetings.
+      </p>
+      <small>
+        This includes scheduled meetings you created or responded to.
+      </small>
     </div>
   );
 }
