@@ -41,11 +41,11 @@
   width: 100%;
   height: 100%;
   z-index: -1;
-  border-right: 1px solid var(--line);
+  border-right: 1px solid rgba(255, 255, 255, 0.38);
 }
 
 .weeklyview__bodycell_oddrow::after {
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.34);
 }
 
 /*
@@ -53,11 +53,11 @@
   can't strike through a cell.
 */
 .weeklyview__bodycell_firstrow {
-  border-top: 1px solid var(--line);
+  border-top: 1px solid rgba(255, 255, 255, 0.45);
 }
 
 .weeklyview__bodycell_firstcol {
-  border-left: 1px solid var(--line);
+  border-left: 1px solid rgba(255, 255, 255, 0.45);
 }
 
 .weeklyview__bodycell.selected {
@@ -125,11 +125,16 @@
 
 .weeklyview-grid {
   text-align: right;
+  border: 2px solid rgba(255, 255, 255, 0.7);
+  border-radius: 10px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .weeklyview__hourcell {
-  padding-right: 0.5em;
+  padding-right: 0.75em;
   font-size: 0.9em;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.34);
 }
 
 .weeklyview__colheadercell {
@@ -137,6 +142,7 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.45);
 }
 
 .weeklyview-grid__monthtext {
