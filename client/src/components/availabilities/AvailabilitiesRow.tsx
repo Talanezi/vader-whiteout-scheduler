@@ -289,6 +289,10 @@ function AvailabilitiesRow({
       onRightBtnClick = () => pageDispatch('inc');
     } else if (isLoggedIn) {
       onRightBtnClick = () => {
+        if (Object.keys(selectedTimes).length === 0) {
+          setShowInfoModal(true);
+          return;
+        }
         submitSelf({
           id: meetingID,
           putRespondentDto: {
@@ -311,6 +315,10 @@ function AvailabilitiesRow({
       onRightBtnClick = () => pageDispatch('inc');
     } else {
       onRightBtnClick = () => {
+        if (Object.keys(selectedTimes).length === 0) {
+          setShowInfoModal(true);
+          return;
+        }
         updateRespondent({
           id: meetingID,
           respondentId: selMode.respondentID,

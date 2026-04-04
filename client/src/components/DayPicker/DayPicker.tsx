@@ -46,12 +46,7 @@ export default function DayPicker() {
       <section className="vw-section-card vw-daypicker-intro d-flex flex-column flex-md-row align-items-md-center justify-content-md-between">
         <div className="vw-copy-block">
           <div className="vw-kicker">Production scheduling</div>
-          <h1 className="vw-page-title">Select candidate production dates</h1>
-          <p className="vw-page-note">
-            Choose the days your crew could realistically make work, then build a
-            shareable scheduling block for rehearsals, shoots, fittings, scouts,
-            pickups, or reviews.
-          </p>
+          <h1 className="vw-page-title">Which days would you like to meet on?</h1>
         </div>
 
         <button

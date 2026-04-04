@@ -235,6 +235,8 @@ function MeetingGridBodyCells({
               selectedUserIsAvailableAtThisTime,
               totalPeople,
               numPeopleAvailableAtThisTime,
+              numRows,
+              numCols,
             }} />
           );
         })
@@ -257,6 +259,8 @@ const Cell = React.memo(function Cell({
   selectedUserIsAvailableAtThisTime,
   numPeopleAvailableAtThisTime,
   totalPeople,
+  numRows,
+  numCols,
 }: {
   rowIdx: number,
   colIdx: number,
@@ -270,6 +274,8 @@ const Cell = React.memo(function Cell({
   selectedUserIsAvailableAtThisTime: boolean,
   numPeopleAvailableAtThisTime: number,
   totalPeople: number,
+  numRows: number,
+  numCols: number,
 }) {
   const selMode = useAppSelector(selectSelMode);
   const {selfRespondentID} = useGetCurrentMeetingWithSelector(
@@ -302,6 +308,8 @@ const Cell = React.memo(function Cell({
   const classNames = ['weeklyview__bodycell'];
   if (rowIdx === 0) classNames.push('weeklyview__bodycell_firstrow');
   if (colIdx === 0) classNames.push('weeklyview__bodycell_firstcol');
+  if (rowIdx === numRows - 1) classNames.push('weeklyview__bodycell_lastrow');
+  if (colIdx === numCols - 1) classNames.push('weeklyview__bodycell_lastcol');
   if (rowIdx % 2 === 1) classNames.push('weeklyview__bodycell_oddrow');
 
   const style: Style = {gridArea: `c${cellIdx}`};

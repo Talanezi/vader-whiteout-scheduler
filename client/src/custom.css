@@ -536,3 +536,36 @@ html[data-theme="light"] .text-danger {
 .signupForm .form-select {
   border-radius: 14px !important;
 }
+
+
+/* Dark-mode form/dropdown readability */
+html[data-theme="dark"] .form-control,
+html[data-theme="dark"] .form-select,
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  background: rgba(255, 255, 255, 0.06) !important;
+  color: var(--ink) !important;
+  border-color: rgba(255, 255, 255, 0.20) !important;
+}
+
+html[data-theme="dark"] .form-control::placeholder,
+html[data-theme="dark"] input::placeholder,
+html[data-theme="dark"] textarea::placeholder {
+  color: rgba(255,255,255,0.42) !important;
+}
+
+html[data-theme="dark"] select option,
+html[data-theme="dark"] .form-select option {
+  background: #ffffff !important;
+  color: #111111 !important;
+}
+
+html[data-theme="dark"] .form-select:focus,
+html[data-theme="dark"] .form-control:focus,
+html[data-theme="dark"] input:focus,
+html[data-theme="dark"] select:focus,
+html[data-theme="dark"] textarea:focus {
+  border-color: rgba(var(--custom-primary-rgb), 0.70) !important;
+  box-shadow: 0 0 0 0.2rem rgba(var(--custom-primary-rgb), 0.18) !important;
+}

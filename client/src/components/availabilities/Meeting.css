@@ -186,24 +186,18 @@
 }
 
 
-.weeklyview-grid::after {
-  content: "";
-  position: absolute;
-  top: calc(2em + 2px);
-  right: 0;
-  bottom: 0;
-  width: 1px;
-  background: rgba(255, 255, 255, 0.88);
-  pointer-events: none;
+
+
+
+.weeklyview__bodycell_lastcol::after,
+.weeklyview__bodycell_lastrow::after {
+  z-index: -1;
 }
 
-.weeklyview-grid::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 1px;
-  background: rgba(255, 255, 255, 0.88);
-  pointer-events: none;
+.weeklyview__bodycell_lastcol::after {
+  border-right: 1px solid rgba(255, 255, 255, 0.88) !important;
+}
+
+.weeklyview__bodycell_lastrow::after {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.88) !important;
 }
