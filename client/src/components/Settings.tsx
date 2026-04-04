@@ -282,9 +282,7 @@ function LinkedAccount({
     onClick = () => unlinkCalendar();
   } else {
     onClick = () => linkCalendar({
-      post_redirect: window.location.hash.startsWith('#/')
-        ? window.location.hash.slice(1)
-        : '/'
+      post_redirect: window.location.href
     });
   }
   const error = link_error || unlink_error;
