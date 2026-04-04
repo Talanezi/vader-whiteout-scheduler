@@ -89,6 +89,11 @@ function compareMeetingShortResponses(
 export function meetingToMeetingShortResponse(
   meeting: Meeting,
 ): MeetingShortResponse {
+  const createdBy =
+    meeting.Creator?.Role
+      ? `${meeting.Creator.Name} | ${meeting.Creator.Role}`
+      : meeting.Creator?.Name;
+
   const response: MeetingShortResponse = {
     meetingID: meeting.Slug,
     name: meeting.Name,
@@ -97,6 +102,7 @@ export function meetingToMeetingShortResponse(
     minStartHour: meeting.MinStartHour,
     maxEndHour: meeting.MaxEndHour,
     tentativeDates: meeting.TentativeDates,
+    createdBy,
   };
   if (meeting.ScheduledStartDateTime && meeting.ScheduledEndDateTime) {
     response.scheduledStartDateTime = meeting.ScheduledStartDateTime;
@@ -112,7 +118,9 @@ function meetingToMeetingResponse(
   const response: MeetingResponse = {
     ...meetingToMeetingShortResponse(meeting),
     respondents: meeting.Respondents.map((respondent) => {
-      const name = respondent.User?.Name ?? respondent.GuestName;
+      const name = respondent.User?.Role
+        ? `${respondent.User.Name} | ${respondent.User.Role}`
+        : respondent.User?.Name ?? respondent.GuestName;
       assert(name, 'respondent name was not filled');
       return {
         respondentID: respondent.RespondentID,

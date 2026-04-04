@@ -472,6 +472,7 @@ export type MeetingShortResponse = {
   tentativeDates: string[];
   scheduledStartDateTime?: string;
   scheduledEndDateTime?: string;
+  createdBy?: string;
 };
 export type MeetingsShortResponse = {
   meetings: MeetingShortResponse[];
@@ -502,6 +503,7 @@ export type MeetingResponse = {
   tentativeDates: string[];
   scheduledStartDateTime?: string;
   scheduledEndDateTime?: string;
+  createdBy?: string;
   respondents: MeetingRespondent[];
   selfRespondentID?: number;
 };

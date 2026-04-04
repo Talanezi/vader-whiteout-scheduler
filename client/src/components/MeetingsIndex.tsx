@@ -68,6 +68,11 @@ function MeetingCard({ meeting }: { meeting: TransformedMeetingShortResponse }) 
               <div style={{ color: 'var(--mute)', marginBottom: 8 }}>{meeting.about}</div>
             ) : null}
             <div style={{ color: 'var(--mute)' }}>{meetingDateLabel(meeting)}</div>
+            {meeting.createdBy ? (
+              <div style={{ color: 'var(--mute)', marginTop: 6 }}>
+                Created by {meeting.createdBy}
+              </div>
+            ) : null}
           </div>
           <div style={{ textAlign: 'right', color: 'var(--mute)' }}>
             <div>{meetingTimesRangeString(meeting)}</div>

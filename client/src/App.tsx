@@ -51,7 +51,7 @@ export default function App() {
               <Route index element={dayPicker} />
               <Route path="create" element={dayPicker} />
               <Route path="m/:id" element={<Meeting />} />
-              <Route path="meetings" element={<MeetingsIndex />} />
+              <Route path="meetings" element={<MeetingsGate />} />
 
               <Route path="signup" element={<Signup />} />
               <Route path="login" element={<Login />} />
@@ -106,9 +106,11 @@ function AppRoot() {
 
           <Nav className="vw-nav-links">
             <NavItem to="/create" label="Schedule" />
-            <NavItem to="/meetings" label="Meetings" />
             {isLoggedIn ? (
-              <NavItem to="/me" label="My Page" />
+              <>
+                <NavItem to="/meetings" label="Meetings" />
+                <NavItem to="/me" label="My Page" />
+              </>
             ) : (
               <>
                 <NavItem to="/signup" label="Sign Up" />
@@ -126,6 +128,11 @@ function AppRoot() {
       <BottomOverlayFiller />
     </div>
   );
+}
+
+function MeetingsGate() {
+  const isLoggedIn = useAppSelector(selectTokenIsPresent);
+  return isLoggedIn ? <MeetingsIndex /> : <Navigate to="/login" replace />;
 }
 
 function NavItem({ to, label }: { to: string; label: string }) {

@@ -81,6 +81,9 @@ export default class MeetingsService {
 
   getAllMeetings(): Promise<Meeting[]> {
     return this.meetingsRepository.find({
+      relations: {
+        Creator: true,
+      },
       order: {
         ScheduledStartDateTime: "DESC",
         ID: "DESC",
@@ -93,7 +96,17 @@ export default class MeetingsService {
       .createQueryBuilder()
       .leftJoin('Meeting.Respondents', 'MeetingRespondent')
       .leftJoin('MeetingRespondent.User', 'User')
-      .select(['Meeting', 'MeetingRespondent', 'User.ID', 'User.Name']);
+      .leftJoin('Meeting.Creator', 'Creator')
+      .select([
+        'Meeting',
+        'MeetingRespondent',
+        'User.ID',
+        'User.Name',
+        'User.Role',
+        'Creator.ID',
+        'Creator.Name',
+        'Creator.Role',
+      ]);
   }
 
   getMeetingWithRespondentsByID(meetingID: number): Promise<Meeting | null> {
