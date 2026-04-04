@@ -308,7 +308,6 @@ const Cell = React.memo(function Cell({
   const classNames = ['weeklyview__bodycell'];
   if (rowIdx === 0) classNames.push('weeklyview__bodycell_firstrow');
   if (colIdx === 0) classNames.push('weeklyview__bodycell_firstcol');
-  if (rowIdx % 2 === 1) classNames.push('weeklyview__bodycell_oddrow');
   if (rowIdx === numRows - 1) classNames.push('weeklyview__bodycell_lastrow');
   if (colIdx === numCols - 1) classNames.push('weeklyview__bodycell_lastcol');
 

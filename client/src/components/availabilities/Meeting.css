@@ -23,22 +23,16 @@
   position: relative;
 }
 
-/* grid lines — vertical on every cell, horizontal on hour boundaries only */
+/* real visible grid */
 .weeklyview__bodycell::after {
   content: '';
   position: absolute;
   inset: 0;
   z-index: -1;
-  border-right: 1px solid rgba(255, 255, 255, 0.22);
-  /* NO border-bottom here — hourly lines come from _oddrow only */
+  border-right: 1px solid rgba(255, 255, 255, 0.24);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.24);
 }
 
-/* odd rows are the :30-minute rows; border-bottom here = line every 1 hour */
-.weeklyview__bodycell_oddrow::after {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
-}
-
-/* outer borders — stronger than inner lines */
 .weeklyview__bodycell_firstrow {
   border-top: 2px solid rgba(255, 255, 255, 0.82);
 }
