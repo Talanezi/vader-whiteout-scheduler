@@ -23,40 +23,30 @@
   position: relative;
 }
 
-/*
-  Keep the real grid lines on the cells, like CabbageMeet, so scheduled blocks
-  read against true hour rows instead of against fake container borders.
-*/
-.weeklyview__bodycell::after,
-.weeklyview__bodycell_oddrow::after {
+/* draw real grid lines on every cell */
+.weeklyview__bodycell::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   z-index: -1;
-  border-right: 1px solid rgba(255, 255, 255, 0.34);
-}
-
-.weeklyview__bodycell_oddrow::after {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.34);
+  border-right: 1px solid rgba(255, 255, 255, 0.28);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 .weeklyview__bodycell_firstrow {
-  border-top: 2px solid rgba(255, 255, 255, 0.82);
+  border-top: 2px solid rgba(255, 255, 255, 0.88);
 }
 
 .weeklyview__bodycell_firstcol {
-  border-left: 2px solid rgba(255, 255, 255, 0.82);
+  border-left: 2px solid rgba(255, 255, 255, 0.88);
 }
 
-.weeklyview__bodycell_lastcol {
-  border-right: 2px solid rgba(255, 255, 255, 0.82);
+.weeklyview__bodycell_lastcol::after {
+  border-right: 2px solid rgba(255, 255, 255, 0.88);
 }
 
-.weeklyview__bodycell_lastrow {
-  border-bottom: 2px solid rgba(255, 255, 255, 0.82);
+.weeklyview__bodycell_lastrow::after {
+  border-bottom: 2px solid rgba(255, 255, 255, 0.88);
 }
 
 .weeklyview__bodycell.selected {
@@ -175,16 +165,3 @@
 
 
 
-
-.weeklyview__bodycell_lastcol::after,
-.weeklyview__bodycell_lastrow::after {
-  z-index: -1;
-}
-
-.weeklyview__bodycell_lastcol::after {
-  border-right: 1px solid rgba(255, 255, 255, 0.88) !important;
-}
-
-.weeklyview__bodycell_lastrow::after {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.88) !important;
-}
