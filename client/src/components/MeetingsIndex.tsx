@@ -10,6 +10,7 @@ import {
   tzAbbr,
 } from 'utils/dates.utils';
 import type { TransformedMeetingShortResponse } from 'utils/response-transforms';
+import { canonicalDowDates, canonicalDowLabels } from 'utils/dowDates';
 
 function shortDateString(date: string): string {
   const [, month, day] = getYearMonthDayFromDateString(date);
@@ -22,6 +23,16 @@ function shortTimeString(hour: number): string {
   const amOrPm = hour < 12 ? 'am' : 'pm';
   return `${HH}:${mm} ${amOrPm}`;
 }
+
+function recurringDowLabel(meeting: TransformedMeetingShortResponse): string {
+  const labels = meeting.tentativeDates
+    .map((date) => canonicalDowDates.indexOf(date))
+    .filter((idx) => idx >= 0)
+    .map((idx) => canonicalDowLabels[idx]);
+
+  return labels.length > 0 ? `Recurring: ${labels.join(', ')}` : 'Days of week';
+}
+
 
 function meetingTimesRangeString(meeting: TransformedMeetingShortResponse): string {
   let startHour: number;
@@ -41,6 +52,9 @@ function meetingTimesRangeString(meeting: TransformedMeetingShortResponse): stri
 function meetingDateLabel(meeting: TransformedMeetingShortResponse): string {
   if (meeting.scheduledStartDateTime) {
     return new Date(meeting.scheduledStartDateTime).toLocaleDateString();
+  }
+  if (meeting.dateMode === 'dow') {
+    return recurringDowLabel(meeting);
   }
   return `${shortDateString(meeting.tentativeDates[0])} - ${shortDateString(meeting.tentativeDates[meeting.tentativeDates.length - 1])}`;
 }

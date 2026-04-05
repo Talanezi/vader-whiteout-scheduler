@@ -12,6 +12,7 @@ import {
 } from "utils/dates.utils";
 import { getReqErrorMessage } from "utils/requests.utils";
 import type { TransformedMeetingShortResponse } from "utils/response-transforms";
+import { canonicalDowDates, canonicalDowLabels } from "utils/dowDates";
 import styles from './Profile.module.css';
 
 export default function CreatedMeetings({showCreatedMeetings}: {showCreatedMeetings: boolean}) {
@@ -76,7 +77,9 @@ export default function CreatedMeetings({showCreatedMeetings}: {showCreatedMeeti
                   */}
                   <div><CalendarIcon /></div>
                   <div className="ms-2">
-                    {meetingDatesRangeString(meeting.tentativeDates)}
+                    {meeting.dateMode === 'dow'
+                      ? recurringDowLabel(meeting)
+                      : meetingDatesRangeString(meeting.tentativeDates)}
                   </div>
                 </div>
               )
@@ -122,6 +125,15 @@ function ScheduleInfo({meeting}: {meeting: TransformedMeetingShortResponse}) {
 function shortDateString(date: string): string {
   const [, month, day] = getYearMonthDayFromDateString(date);
   return getMonthAbbr(month - 1, false) + ' ' + day;
+}
+
+function recurringDowLabel(meeting: TransformedMeetingShortResponse): string {
+  const labels = meeting.tentativeDates
+    .map((date) => canonicalDowDates.indexOf(date))
+    .filter((idx) => idx >= 0)
+    .map((idx) => canonicalDowLabels[idx]);
+
+  return labels.length > 0 ? `Recurring: ${labels.join(', ')}` : 'Days of week';
 }
 
 function meetingDatesRangeString(dates: string[]): string {
