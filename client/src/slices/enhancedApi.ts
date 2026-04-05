@@ -62,6 +62,7 @@ export const {
 } = replacedApi;
 
 const allTags = [
+  'allMeetings',
   'createdMeetings',
   'respondedMeetings',
   'meeting',
@@ -114,7 +115,9 @@ export const enhancedApi = replacedApi.enhanceEndpoints({
     getMeeting: {
       providesTags: (_result, _error, arg) => [{type: 'meeting', id: arg}],
     },
-    getAllMeetings: {},
+    getAllMeetings: {
+      providesTags: ['allMeetings'],
+    },
     addGuestRespondent: {
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
@@ -128,28 +131,28 @@ export const enhancedApi = replacedApi.enhanceEndpoints({
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
     createMeeting: {
-      invalidatesTags: ['createdMeetings', 'respondedMeetings'],
+      invalidatesTags: ['allMeetings', 'createdMeetings', 'respondedMeetings'],
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
     editMeeting: {
       invalidatesTags: (result, error, arg) =>
         [
-          'createdMeetings', 'respondedMeetings',
+          'allMeetings', 'createdMeetings', 'respondedMeetings',
           {type: 'googleCalendarEvents', id: arg.id},
           {type: 'microsoftCalendarEvents', id: arg.id},
         ],
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
     deleteMeeting: {
-      invalidatesTags: ['createdMeetings', 'respondedMeetings'],
+      invalidatesTags: ['allMeetings', 'createdMeetings', 'respondedMeetings'],
       onQueryStarted: (arg, api) => deleteMeeting_onQueryStarted(arg, api),
     },
     scheduleMeeting: {
-      invalidatesTags: ['createdMeetings', 'respondedMeetings'],
+      invalidatesTags: ['allMeetings', 'createdMeetings', 'respondedMeetings'],
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
     unscheduleMeeting: {
-      invalidatesTags: ['createdMeetings', 'respondedMeetings'],
+      invalidatesTags: ['allMeetings', 'createdMeetings', 'respondedMeetings'],
       onQueryStarted: (arg, api) => upsertMeeting_onQueryStarted(arg, api),
     },
     getCreatedMeetings: {
