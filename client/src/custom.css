@@ -569,3 +569,34 @@ html[data-theme="dark"] textarea:focus {
   border-color: rgba(var(--custom-primary-rgb), 0.70) !important;
   box-shadow: 0 0 0 0.2rem rgba(var(--custom-primary-rgb), 0.18) !important;
 }
+
+
+html[data-theme="dark"] input[type="time"] {
+  color-scheme: dark;
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.24) !important;
+}
+
+html[data-theme="dark"] input[type="time"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(1.15);
+}
+
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-fields-wrapper,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-hour-field,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-minute-field,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-ampm-field {
+  color: #ffffff !important;
+}
+
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-hour-field:focus,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-minute-field:focus,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-ampm-field:focus,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-hour-field:active,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-minute-field:active,
+html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-ampm-field:active {
+  background: rgba(120, 215, 255, 0.32) !important;
+  color: #ffffff !important;
+}
+
