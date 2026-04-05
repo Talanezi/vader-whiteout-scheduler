@@ -6,6 +6,7 @@ import { arrayToObject } from "./arrays.utils";
 
 export type TransformedRespondent = {
   availabilities: DateTimeSet;
+  ifNeededAvailabilities: DateTimeSet;
   name: string;
 };
 export type TransformedRespondents = {
@@ -67,6 +68,7 @@ function transformRespondents(respondents: MeetingRespondent[]): TransformedResp
   for (const respondent of respondents) {
     result[respondent.respondentID] = {
       availabilities: arrayToObject(respondent.availabilities),
+      ifNeededAvailabilities: arrayToObject(respondent.ifNeededAvailabilities ?? []),
       name: respondent.name,
     };
   }

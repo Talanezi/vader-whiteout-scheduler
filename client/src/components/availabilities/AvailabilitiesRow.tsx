@@ -7,6 +7,9 @@ import {
   useEditSelectedUser,
   createSchedule,
   selectSelectedTimes,
+  selectIfNeededDateTimes,
+  selectSelectionKind,
+  setSelectionKind,
   addDateTimesAndResetMouse,
   removeDateTimesAndResetMouse,
 } from 'slices/availabilitiesSelection';
@@ -105,6 +108,8 @@ function AvailabilitiesRow({
 }) {
   const selMode = useAppSelector(selectSelMode);
   const selectedTimes = useAppSelector(selectSelectedTimes);
+  const selectedIfNeededTimes = useAppSelector(selectIfNeededDateTimes);
+  const selectionKind = useAppSelector(selectSelectionKind);
   const meetingID = useAppSelector(selectCurrentMeetingID);
   const { respondents, selfRespondentID, scheduledStartDateTime, scheduledEndDateTime, dateMode } = useGetCurrentMeetingWithSelector(
     ({ data: meeting }) => ({
@@ -310,6 +315,7 @@ function AvailabilitiesRow({
           id: meetingID,
           putRespondentDto: {
             availabilities: Object.keys(selectedTimes),
+            ifNeededAvailabilities: Object.keys(selectedIfNeededTimes),
           },
         });
       };
@@ -337,6 +343,7 @@ function AvailabilitiesRow({
           respondentId: selMode.respondentID,
           putRespondentDto: {
             availabilities: Object.keys(selectedTimes),
+            ifNeededAvailabilities: Object.keys(selectedIfNeededTimes),
           },
         });
       };
@@ -426,6 +433,25 @@ function AvailabilitiesRow({
         <div style={{ fontSize: '1.3em' }}>{title}</div>
 
         <div className="d-flex align-items-center flex-wrap gap-3">
+          {(selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') && (
+            <div className="d-flex align-items-center flex-wrap gap-2">
+              <NonFocusButton
+                className={`btn ${selectionKind === 'available' ? 'btn-primary' : 'btn-outline-secondary'} meeting-avl-button`}
+                onClick={() => dispatch(setSelectionKind('available'))}
+                disabled={btnDisabled}
+              >
+                Available
+              </NonFocusButton>
+              <NonFocusButton
+                className={`btn ${selectionKind === 'ifNeeded' ? 'btn-warning' : 'btn-outline-secondary'} meeting-avl-button`}
+                onClick={() => dispatch(setSelectionKind('ifNeeded'))}
+                disabled={btnDisabled}
+              >
+                If needed
+              </NonFocusButton>
+            </div>
+          )}
+
           {canUseTemplate && (
             <>
               <NonFocusButton

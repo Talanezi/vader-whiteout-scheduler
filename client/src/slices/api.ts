@@ -493,6 +493,7 @@ export type MeetingRespondent = {
   respondentID: number;
   name: string;
   availabilities: string[];
+  ifNeededAvailabilities?: string[];
 };
 export type MeetingResponse = {
   meetingID: string;
@@ -537,11 +538,13 @@ export type ScheduleMeetingDto = {
 };
 export type AddGuestRespondentDto = {
   availabilities: string[];
+  ifNeededAvailabilities?: string[];
   name: string;
   email?: string;
 };
 export type PutRespondentDto = {
   availabilities: string[];
+  ifNeededAvailabilities?: string[];
 };
 export type ServerInfoResponse = {
   googleOAuth2IsSupported: boolean;

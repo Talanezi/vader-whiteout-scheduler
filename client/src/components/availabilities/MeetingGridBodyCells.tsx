@@ -8,6 +8,8 @@ import {
 import {
   selectSelMode,
   selectSelectedTimes,
+  selectIfNeededDateTimes,
+  selectSelectionKind,
   selectHoverUser,
   setHoverDateTime,
   addDateTimesAndResetMouse,
@@ -180,6 +182,14 @@ function MeetingGridBodyCells({
     }
     return createDateTimePeople(availabilities);
   }, [respondents]);
+
+  const dateTimePeopleIfNeeded = useMemo(() => {
+    const availabilities: PeopleDateTimes = {};
+    for (const [respondentID, respondent] of Object.entries(respondents)) {
+      availabilities[respondentID] = respondent.ifNeededAvailabilities;
+    }
+    return createDateTimePeople(availabilities);
+  }, [respondents]);
   const gridCoords = useMemo(() => flatGridCoords(numRows, numCols), [numRows, numCols]);
   const dateTimes = useMemo(
     () => calculateDateTimeGrid(numRows, numCols, dateStrings, startHour),
@@ -217,10 +227,15 @@ function MeetingGridBodyCells({
             : undefined;
           const externalEvents = dateTimesToExternalEventInfo[dateTime] || emptyArrayOfExternalEventInfo;
           const hoverUserIsAvailableAtThisTime = somebodyIsHovered && respondents[hoverUser].availabilities[dateTime];
+          const hoverUserIsIfNeededAtThisTime = somebodyIsHovered && respondents[hoverUser].ifNeededAvailabilities[dateTime];
           const selectedUserIsAvailableAtThisTime =
             selMode.type === 'selectedUser'
             && respondents[selMode.selectedRespondentID].availabilities[dateTime];
+          const selectedUserIsIfNeededAtThisTime =
+            selMode.type === 'selectedUser'
+            && respondents[selMode.selectedRespondentID].ifNeededAvailabilities[dateTime];
           const numPeopleAvailableAtThisTime = dateTimePeople[dateTime]?.length ?? 0;
+          const numPeopleIfNeededAtThisTime = dateTimePeopleIfNeeded[dateTime]?.length ?? 0;
           return (
             <Cell key={i} {...{
               cellIdx: i,
@@ -232,9 +247,12 @@ function MeetingGridBodyCells({
               externalEvents,
               somebodyIsHovered,
               hoverUserIsAvailableAtThisTime,
+              hoverUserIsIfNeededAtThisTime,
               selectedUserIsAvailableAtThisTime,
+              selectedUserIsIfNeededAtThisTime,
               totalPeople,
               numPeopleAvailableAtThisTime,
+              numPeopleIfNeededAtThisTime,
               numRows,
               numCols,
             }} />
@@ -256,8 +274,11 @@ const Cell = React.memo(function Cell({
   externalEvents,
   somebodyIsHovered,
   hoverUserIsAvailableAtThisTime,
+  hoverUserIsIfNeededAtThisTime,
   selectedUserIsAvailableAtThisTime,
+  selectedUserIsIfNeededAtThisTime,
   numPeopleAvailableAtThisTime,
+  numPeopleIfNeededAtThisTime,
   totalPeople,
   numRows,
   numCols,
@@ -271,8 +292,11 @@ const Cell = React.memo(function Cell({
   externalEvents: ExternalEventInfoWithNumCols,
   somebodyIsHovered: boolean,
   hoverUserIsAvailableAtThisTime: boolean,
+  hoverUserIsIfNeededAtThisTime: boolean,
   selectedUserIsAvailableAtThisTime: boolean,
+  selectedUserIsIfNeededAtThisTime: boolean,
   numPeopleAvailableAtThisTime: number,
+  numPeopleIfNeededAtThisTime: number,
   totalPeople: number,
   numRows: number,
   numCols: number,
@@ -282,6 +306,8 @@ const Cell = React.memo(function Cell({
     ({data}) => ({selfRespondentID: data?.selfRespondentID})
   );
   const isSelected = useAppSelector(state => !!selectSelectedTimes(state)[dateTime]);
+  const isIfNeededSelected = useAppSelector(state => !!selectIfNeededDateTimes(state)[dateTime]);
+  const selectionKind = useAppSelector(selectSelectionKind);
   // const {meetingIsScheduled} = useGetCurrentMeetingWithSelector(
   //   ({data: meeting}) => ({meetingIsScheduled: meeting?.scheduledDateTimes !== undefined})
   // );
@@ -330,14 +356,20 @@ const Cell = React.memo(function Cell({
   } else if (selMode.type === 'selectedUser') {
     if (selectedUserIsAvailableAtThisTime) {
       classNames.push('selected');
+    } else if (selectedUserIsIfNeededAtThisTime) {
+      classNames.push('ifneeded-selected');
     }
   } else if (selMode.type === 'none') {
     if (somebodyIsHovered) {
       if (hoverUserIsAvailableAtThisTime) {
         classNames.push('selected');
+      } else if (hoverUserIsIfNeededAtThisTime) {
+        classNames.push('ifneeded-selected');
       }
     } else if (numPeopleAvailableAtThisTime > 0) {
       showRespondentsColour = true;
+    } else if (numPeopleIfNeededAtThisTime > 0) {
+      classNames.push('ifneeded-aggregate');
     }
   } else {
     assertIsNever(selMode);

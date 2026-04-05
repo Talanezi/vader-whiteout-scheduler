@@ -38,6 +38,8 @@ export type MouseState = {
 };
 const initialMouseState: MouseState = {type: 'upNoCellsSelected'};
 
+export type AvailabilityKind = 'available' | 'ifNeeded';
+
 export type AvailabilitiesSelectionState = {
   selMode: SelModeNone;
   hoverUser: number | null;
@@ -45,6 +47,8 @@ export type AvailabilitiesSelectionState = {
 } | {
   selMode: SelModeEditing;
   dateTimes: DateTimeSet;
+  ifNeededDateTimes: DateTimeSet;
+  selectionKind: AvailabilityKind;
   mouse: MouseState;
 } | {
   selMode: SelModeSelectedUser;
@@ -53,6 +57,8 @@ export type AvailabilitiesSelectionState = {
 function stateIsEditing(state: AvailabilitiesSelectionState): state is {
   selMode: SelModeEditing,
   dateTimes: DateTimeSet,
+  ifNeededDateTimes: DateTimeSet,
+  selectionKind: AvailabilityKind,
   mouse: MouseState,
 } {
   return state.selMode.type === 'editingRespondent'
@@ -68,9 +74,32 @@ function stateIsNone(state: AvailabilitiesSelectionState): state is {
   return state.selMode.type === 'none';
 }
 
+
+function getActiveDateTimes(state: {
+  dateTimes: DateTimeSet;
+  ifNeededDateTimes: DateTimeSet;
+  selectionKind: AvailabilityKind;
+}) {
+  return state.selectionKind === 'available'
+    ? state.dateTimes
+    : state.ifNeededDateTimes;
+}
+
+function getInactiveDateTimes(state: {
+  dateTimes: DateTimeSet;
+  ifNeededDateTimes: DateTimeSet;
+  selectionKind: AvailabilityKind;
+}) {
+  return state.selectionKind === 'available'
+    ? state.ifNeededDateTimes
+    : state.dateTimes;
+}
+
 const initialState: AvailabilitiesSelectionState = {
   selMode: { type: 'none' },
   dateTimes: {},
+  ifNeededDateTimes: {},
+  selectionKind: 'available',
   hoverUser: null,
   hoverDateTime: null,
 };
@@ -84,13 +113,18 @@ export const availabilitiesSelectionSlice = createSlice({
       return {
         selMode: {type: 'editingSchedule'},
         dateTimes: {},
+        ifNeededDateTimes: {},
+        selectionKind: 'available',
         mouse: initialMouseState,
       };
     },
     editUserInternal: (
       state,
-      {payload: {availabilities, isAdding, selfRespondentID}}: PayloadAction<{
-        availabilities: DateTimeSet, isAdding: boolean, selfRespondentID?: number,
+      {payload: {availabilities, ifNeededAvailabilities, isAdding, selfRespondentID}}: PayloadAction<{
+        availabilities: DateTimeSet,
+        ifNeededAvailabilities: DateTimeSet,
+        isAdding: boolean,
+        selfRespondentID?: number,
       }>) => {
       let selMode: {type: 'addingRespondent'} | {type: 'editingRespondent', respondentID: number} | undefined;
       if (isAdding) {
@@ -108,6 +142,8 @@ export const availabilitiesSelectionSlice = createSlice({
       return {
         selMode,
         dateTimes: availabilities,
+        ifNeededDateTimes: ifNeededAvailabilities,
+        selectionKind: 'available',
         mouse: initialMouseState,
       };
     },
@@ -127,23 +163,25 @@ export const availabilitiesSelectionSlice = createSlice({
     },
     addDateTime: (state, { payload: dateTime }: PayloadAction<string>) => {
       assert(stateIsEditing(state));
-      state.dateTimes[dateTime] = true;
+      getActiveDateTimes(state)[dateTime] = true;
+      delete getInactiveDateTimes(state)[dateTime];
     },
     removeDateTime: (state, { payload: dateTime }: PayloadAction<string>) => {
       assert(stateIsEditing(state));
-      delete state.dateTimes[dateTime];
+      delete getActiveDateTimes(state)[dateTime];
     },
     addDateTimesAndResetMouse: (state, { payload: dateTimes }: PayloadAction<string[]>) => {
       assert(stateIsEditing(state));
       for (const dateTime of dateTimes) {
-        state.dateTimes[dateTime] = true;
+        getActiveDateTimes(state)[dateTime] = true;
+        delete getInactiveDateTimes(state)[dateTime];
       }
       state.mouse = initialMouseState;
     },
     removeDateTimesAndResetMouse: (state, { payload: dateTimes }: PayloadAction<string[]>) => {
       assert(stateIsEditing(state));
       for (const dateTime of dateTimes) {
-        delete state.dateTimes[dateTime];
+        delete getActiveDateTimes(state)[dateTime];
       }
       state.mouse = initialMouseState;
     },
@@ -170,6 +208,7 @@ export const availabilitiesSelectionSlice = createSlice({
       };
       if (state.selMode.type === 'editingSchedule') {
         state.dateTimes = {};
+        state.ifNeededDateTimes = {};
         state.mouse.downCellWasOriginallySelected = false;
       }
     },
@@ -178,6 +217,11 @@ export const availabilitiesSelectionSlice = createSlice({
       if (state.mouse.type === 'down') {
         state.mouse.curCell = payload.cell;
       }
+    },
+
+    setSelectionKind: (state, { payload }: PayloadAction<AvailabilityKind>) => {
+      assert(stateIsEditing(state));
+      state.selectionKind = payload;
     },
   },
 });
@@ -196,6 +240,7 @@ export const {
   notifyMouseUp,
   notifyMouseDown,
   notifyMouseEnter,
+  setSelectionKind,
 } = availabilitiesSelectionSlice.actions;
 const {
   editUserInternal,
@@ -212,10 +257,13 @@ function selectSelectedRespondentID(rootState: RootState): number | undefined {
 export function useEditSelectedUser() {
   const dispatch = useAppDispatch();
   const selectedRespondentID = useAppSelector(selectSelectedRespondentID);
-  const {availabilities} = useGetCurrentMeetingWithSelector(
+  const {availabilities, ifNeededAvailabilities} = useGetCurrentMeetingWithSelector(
     ({data: meeting}) => ({
       availabilities: selectedRespondentID !== undefined
         ? meeting?.respondents[selectedRespondentID]?.availabilities
+        : undefined,
+      ifNeededAvailabilities: selectedRespondentID !== undefined
+        ? meeting?.respondents[selectedRespondentID]?.ifNeededAvailabilities
         : undefined,
     })
   );
@@ -223,19 +271,23 @@ export function useEditSelectedUser() {
     if (availabilities !== undefined) {
       dispatch(editUserInternal({
         availabilities,
+        ifNeededAvailabilities: ifNeededAvailabilities || {},
         isAdding: false,
       }));
     }
-  }, [dispatch, availabilities]);
+  }, [dispatch, availabilities, ifNeededAvailabilities]);
   return editSelectedUser;
 }
 
 export function useEditSelfWhenLoggedIn() {
   const dispatch = useAppDispatch();
-  const {availabilities, selfRespondentID} = useGetCurrentMeetingWithSelector(
+  const {availabilities, ifNeededAvailabilities, selfRespondentID} = useGetCurrentMeetingWithSelector(
     ({data: meeting}) => ({
       availabilities: meeting?.selfRespondentID !== undefined
         ? meeting.respondents[meeting.selfRespondentID]!.availabilities
+        : undefined,
+      ifNeededAvailabilities: meeting?.selfRespondentID !== undefined
+        ? meeting.respondents[meeting.selfRespondentID]!.ifNeededAvailabilities
         : undefined,
       selfRespondentID: meeting?.selfRespondentID,
     })
@@ -243,17 +295,18 @@ export function useEditSelfWhenLoggedIn() {
   const editSelf = useCallback(() => {
     dispatch(editUserInternal({
       availabilities: availabilities || {},
+      ifNeededAvailabilities: ifNeededAvailabilities || {},
       isAdding: selfRespondentID === undefined,
       selfRespondentID,
     }));
-  }, [dispatch, availabilities, selfRespondentID]);
+  }, [dispatch, availabilities, ifNeededAvailabilities, selfRespondentID]);
   return editSelf;
 }
 
 export function useEditSelfAsGuest() {
   const dispatch = useAppDispatch();
   const editSelfAsGuest = useCallback(() => {
-    dispatch(editUserInternal({availabilities: {}, isAdding: true}));
+    dispatch(editUserInternal({availabilities: {}, ifNeededAvailabilities: {}, isAdding: true}));
   }, [dispatch]);
   return editSelfAsGuest;
 }
@@ -265,6 +318,17 @@ export function useEditSelf(isLoggedIn: boolean) {
 }
 
 export const selectSelModeAndDateTimes = (state: RootState) => state.availabilitiesSelection;
+
+export const selectIfNeededDateTimes = createSelector(
+  selectSelModeAndDateTimes,
+  (state) => stateIsEditing(state) ? state.ifNeededDateTimes : {}
+);
+
+export const selectSelectionKind = createSelector(
+  selectSelModeAndDateTimes,
+  (state) => stateIsEditing(state) ? state.selectionKind : 'available'
+);
+
 export const selectSelMode = createSelector(
   [selectSelModeAndDateTimes],
   (state: AvailabilitiesSelectionState) => state.selMode
