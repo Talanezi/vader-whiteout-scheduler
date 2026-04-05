@@ -60,28 +60,60 @@ const modifyMeetingAuthzDoc =
   'If the meeting was created by a registed user, then ' +
   'the client must be logged in as that user.';
 
+function nextOccurrenceTime(dateTimeString: string): number {
+  const d = new Date(dateTimeString);
+  const now = new Date();
+
+  // Start of current week (Sunday) in local time
+  const startOfWeek = new Date(now);
+  startOfWeek.setDate(now.getDate() - now.getDay());
+  startOfWeek.setHours(0, 0, 0, 0);
+
+  const mapped = new Date(d);
+  mapped.setFullYear(
+    startOfWeek.getFullYear(),
+    startOfWeek.getMonth(),
+    startOfWeek.getDate(),
+  );
+  mapped.setDate(startOfWeek.getDate() + d.getDay());
+
+  if (mapped.getTime() <= now.getTime()) {
+    mapped.setDate(mapped.getDate() + 7);
+  }
+
+  return mapped.getTime();
+}
+
+function effectiveMeetingTime(meeting: MeetingShortResponse): number {
+  if (meeting.scheduledStartDateTime) {
+    if (meeting.dateMode === 'dow') {
+      return nextOccurrenceTime(meeting.scheduledStartDateTime);
+    }
+    return Date.parse(meeting.scheduledStartDateTime);
+  }
+
+  if (meeting.dateMode === 'dow') {
+    // Unscheduled recurring meetings should remain current and visible
+    return Date.now();
+  }
+
+  return Date.parse(meeting.tentativeDates[0] || '9999-12-31');
+}
+
 function compareMeetingShortResponses(
   a: MeetingShortResponse,
   b: MeetingShortResponse,
 ): number {
   const now = Date.now();
-  const aCurrent = a.scheduledStartDateTime
-    ? Date.parse(a.scheduledStartDateTime) >= now
-    : true;
-  const bCurrent = b.scheduledStartDateTime
-    ? Date.parse(b.scheduledStartDateTime) >= now
-    : true;
+  const aTime = effectiveMeetingTime(a);
+  const bTime = effectiveMeetingTime(b);
+
+  const aCurrent = aTime >= now;
+  const bCurrent = bTime >= now;
 
   if (aCurrent !== bCurrent) {
     return aCurrent ? -1 : 1;
   }
-
-  const aTime = a.scheduledStartDateTime
-    ? Date.parse(a.scheduledStartDateTime)
-    : Date.parse(a.tentativeDates[0] || '9999-12-31');
-  const bTime = b.scheduledStartDateTime
-    ? Date.parse(b.scheduledStartDateTime)
-    : Date.parse(b.tentativeDates[0] || '9999-12-31');
 
   return aTime - bTime;
 }
