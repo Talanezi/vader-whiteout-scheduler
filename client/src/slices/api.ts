@@ -470,6 +470,7 @@ export type MeetingShortResponse = {
   minStartHour: number;
   maxEndHour: number;
   tentativeDates: string[];
+  dateMode: "specific" | "dow";
   scheduledStartDateTime?: string;
   scheduledEndDateTime?: string;
   createdBy?: string;
@@ -501,6 +502,7 @@ export type MeetingResponse = {
   minStartHour: number;
   maxEndHour: number;
   tentativeDates: string[];
+  dateMode: "specific" | "dow";
   scheduledStartDateTime?: string;
   scheduledEndDateTime?: string;
   createdBy?: string;
@@ -514,6 +516,7 @@ export type CreateMeetingDto = {
   minStartHour: number;
   maxEndHour: number;
   tentativeDates: string[];
+  dateMode?: "specific" | "dow";
 };
 export type ForbiddenResponse = {
   statusCode: number;
@@ -526,6 +529,7 @@ export type EditMeetingDto = {
   minStartHour?: number;
   maxEndHour?: number;
   tentativeDates?: string[];
+  dateMode?: "specific" | "dow";
 };
 export type ScheduleMeetingDto = {
   startDateTime: string;

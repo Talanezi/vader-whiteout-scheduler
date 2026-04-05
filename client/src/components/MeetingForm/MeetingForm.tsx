@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import { useNavigate } from 'react-router-dom';
 import { resetSelectedDates, selectSelectedDates } from 'slices/selectedDates';
+import { resetDateSelectionMode, selectDateSelectionMode } from 'slices/dateSelectionMode';
+import { resetSelectedWeekdays, selectSelectedWeekdays } from 'slices/selectedWeekdays';
 import { useAppDispatch, useAppSelector } from 'app/hooks';
 import './MeetingForm.css';
 import MeetingNamePrompt from './MeetingNamePrompt';
@@ -11,6 +13,7 @@ import MeetingTimesPrompt from './MeetingTimesPrompt';
 import { useCreateMeetingMutation } from 'slices/api';
 import { getReqErrorMessage } from 'utils/requests.utils';
 import { ianaTzName } from 'utils/dates.utils';
+import { selectedWeekdaysToCanonicalDates } from 'utils/dowDates';
 import useSetTitle from 'utils/title.hook';
 
 export default function MeetingForm() {
@@ -22,6 +25,8 @@ export default function MeetingForm() {
 
   const dispatch = useAppDispatch();
   const dates = useAppSelector(selectSelectedDates);
+  const dateSelectionMode = useAppSelector(selectDateSelectionMode);
+  const selectedWeekdays = useAppSelector(selectSelectedWeekdays);
   const [createMeeting, { data, isLoading, isSuccess, error }] =
     useCreateMeetingMutation();
   const navigate = useNavigate();
@@ -31,6 +36,8 @@ export default function MeetingForm() {
   useEffect(() => {
     if (isSuccess) {
       dispatch(resetSelectedDates());
+      dispatch(resetSelectedWeekdays());
+      dispatch(resetDateSelectionMode());
       navigate('/m/' + data!.meetingID);
     }
   }, [data, isSuccess, dispatch, navigate]);
@@ -56,13 +63,21 @@ export default function MeetingForm() {
     if (meetingName.trim() === '') return;
     if (endTime <= startTime) return;
 
+    const tentativeDates =
+      dateSelectionMode === 'specific'
+        ? Object.keys(dates)
+        : selectedWeekdaysToCanonicalDates(selectedWeekdays);
+
+    if (tentativeDates.length === 0) return;
+
     createMeeting({
       name: meetingName.trim(),
       about: normalizedAbout,
       timezone: ianaTzName,
       minStartHour: startTime,
       maxEndHour: endTime,
-      tentativeDates: Object.keys(dates),
+      tentativeDates,
+      dateMode: dateSelectionMode,
     });
   };
 

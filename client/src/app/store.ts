@@ -3,7 +3,9 @@ import { enhancedApi } from 'slices/enhancedApi';
 import authenticationReducer from 'slices/authentication';
 import availabilitiesSelectionReducer from 'slices/availabilitiesSelection';
 import currentMeetingReducer from 'slices/currentMeeting';
+import dateSelectionModeReducer from 'slices/dateSelectionMode';
 import selectedDatesReducer from 'slices/selectedDates';
+import selectedWeekdaysReducer from 'slices/selectedWeekdays';
 
 const rootReducer = combineReducers({
   [enhancedApi.reducerPath]: enhancedApi.reducer,
@@ -11,6 +13,8 @@ const rootReducer = combineReducers({
   availabilitiesSelection: availabilitiesSelectionReducer,
   currentMeeting: currentMeetingReducer,
   selectedDates: selectedDatesReducer,
+  dateSelectionMode: dateSelectionModeReducer,
+  selectedWeekdays: selectedWeekdaysReducer,
 });
 
 export function setupStore() {

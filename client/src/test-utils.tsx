@@ -38,6 +38,7 @@ export const sampleMeetingResponse: MeetingResponse = {
   minStartHour: 9,
   maxEndHour: 17,
   tentativeDates: ['2022-12-24', '2022-12-25', '2022-12-26'],
+  dateMode: 'specific',
   respondents: [],
 };
 Object.freeze(sampleMeetingResponse);

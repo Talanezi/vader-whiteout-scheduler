@@ -69,6 +69,9 @@ export default class Meeting {
   @Column({ type: 'simple-json' })
   TentativeDates: string[];
 
+  @Column({ default: 'specific' })
+  DateMode: 'specific' | 'dow';
+
   // e.g. '2022-10-23T10:00:00Z'
   @Column({ nullable: true })
   ScheduledStartDateTime?: string;

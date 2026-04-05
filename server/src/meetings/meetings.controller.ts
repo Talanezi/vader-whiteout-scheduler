@@ -102,6 +102,7 @@ export function meetingToMeetingShortResponse(
     minStartHour: meeting.MinStartHour,
     maxEndHour: meeting.MaxEndHour,
     tentativeDates: meeting.TentativeDates,
+    dateMode: meeting.DateMode ?? 'specific',
     createdBy,
   };
   if (meeting.ScheduledStartDateTime && meeting.ScheduledEndDateTime) {
@@ -161,6 +162,9 @@ function meetingDtoToMeetingEntity(
   }
   if (body.hasOwnProperty('tentativeDates')) {
     meeting.TentativeDates = body.tentativeDates.sort();
+  }
+  if (body.hasOwnProperty('dateMode')) {
+    meeting.DateMode = body.dateMode ?? 'specific';
   }
   return meeting;
 }

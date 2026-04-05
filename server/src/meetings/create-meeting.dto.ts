@@ -9,6 +9,7 @@ import {
   IsInt,
   Min,
   Max,
+  IsIn,
 } from 'class-validator';
 import IsOnlyDateString from './date-string-validator.decorator';
 import IsTzDatabaseTimezone from './timezone-validator.decorator';
@@ -61,4 +62,13 @@ export default class CreateMeetingDto {
   @ArrayMaxSize(30)
   @IsOnlyDateString({ each: true })
   tentativeDates: string[];
+
+  @ApiProperty({
+    example: 'specific',
+    required: false,
+    description: 'Whether the meeting uses specific calendar dates or days-of-week mode.',
+  })
+  @IsOptional()
+  @IsIn(['specific', 'dow'])
+  dateMode?: 'specific' | 'dow';
 }

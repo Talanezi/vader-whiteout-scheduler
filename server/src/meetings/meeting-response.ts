@@ -33,6 +33,9 @@ export default class MeetingResponse {
   @ApiProperty({ example: ['2022-10-23', '2022-10-24'] })
   tentativeDates: string[];
 
+  @ApiProperty({ example: 'specific' })
+  dateMode: 'specific' | 'dow';
+
   @ApiProperty({ example: '2022-10-23T10:00:00Z' })
   @ApiPropertyOptional()
   scheduledStartDateTime?: string;

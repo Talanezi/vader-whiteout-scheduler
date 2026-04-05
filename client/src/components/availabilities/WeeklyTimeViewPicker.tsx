@@ -88,11 +88,12 @@ function pageNumberReducer(page: number, action: 'inc' | 'dec'): number {
 }
 
 export default function WeeklyViewTimePicker() {
-  const {startTime, endTime, dates} = useGetCurrentMeetingWithSelector(
+  const {startTime, endTime, dates, dateMode} = useGetCurrentMeetingWithSelector(
     ({data: meeting}) => ({
       startTime: meeting?.minStartHour,
       endTime: meeting?.maxEndHour,
       dates: meeting?.tentativeDates,
+      dateMode: meeting?.dateMode ?? 'specific',
     })
   );
   // If the meeting data hasn't been loaded yet, then this component
@@ -148,8 +149,8 @@ export default function WeeklyViewTimePicker() {
             }}
             className={className}
           >
-            <MeetingGridMonthTextCell dateStrings={datesDisplayed} />
-            <MeetingGridDayOfWeekCells dateStrings={datesDisplayed} />
+            <MeetingGridMonthTextCell dateStrings={datesDisplayed} dateMode={dateMode} />
+            <MeetingGridDayOfWeekCells dateStrings={datesDisplayed} dateMode={dateMode} />
             <MeetingTimesHoursColumn startHour={startHour} endHour={endHour} />
             <MeetingDaysLeftArrow {...{moreDaysToLeft, pageDispatch}} />
             <MeetingGridBodyCells
@@ -169,8 +170,12 @@ export default function WeeklyViewTimePicker() {
 }
 
 const MeetingGridMonthTextCell = React.memo(function MeetingGridMonthTextCell(
-  { dateStrings }: { dateStrings: string[] }
+  { dateStrings, dateMode }: { dateStrings: string[], dateMode: 'specific' | 'dow' }
 ) {
+  if (dateMode === 'dow') {
+    return <div className="weeklyview-grid__monthtext">Days of week</div>;
+  }
+
   const [startYear, startMonth] = getYearMonthDayFromDateString(dateStrings[0]);
   const [endYear, endMonth] = getYearMonthDayFromDateString(dateStrings[dateStrings.length - 1]);
   const startDateText = `${getMonthAbbr(startMonth-1, false)} ${startYear}`;
@@ -182,7 +187,7 @@ const MeetingGridMonthTextCell = React.memo(function MeetingGridMonthTextCell(
 });
 
 const MeetingGridDayOfWeekCells = React.memo(function MeetingGridDayOfWeekCells(
-  { dateStrings }: { dateStrings: string[] }
+  { dateStrings, dateMode }: { dateStrings: string[], dateMode: 'specific' | 'dow' }
 ) {
   return (
     <>
@@ -196,7 +201,9 @@ const MeetingGridDayOfWeekCells = React.memo(function MeetingGridDayOfWeekCells(
               style={{gridArea: `w${i}`}}
             >
               <div>{getDayOfWeekAbbr(date).toUpperCase()}</div>
-              <div style={{fontSize: '1.5em'}}>{date.getDate()}</div>
+              {dateMode === 'specific' && (
+                <div style={{fontSize: '1.5em'}}>{date.getDate()}</div>
+              )}
             </div>
           );
         })

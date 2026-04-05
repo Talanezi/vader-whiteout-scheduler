@@ -172,3 +172,79 @@ html[data-theme="light"] .daypicker-calendar__cell__button.unselected {
   background-color: rgba(120, 215, 255, 0.12);
   border-color: var(--line);
 }
+
+.vw-mode-toggle {
+  display: inline-flex;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px;
+  background: rgba(255,255,255,.03);
+  gap: 4px;
+}
+
+html[data-theme="light"] .vw-mode-toggle {
+  background: rgba(0,0,0,.03);
+}
+
+.vw-mode-toggle__button {
+  border: 0;
+  background: transparent;
+  color: var(--mute);
+  padding: .55rem .9rem;
+  border-radius: 999px;
+  font-weight: 800;
+  transition: .18s ease;
+}
+
+.vw-mode-toggle__button.active {
+  background: #ffffff;
+  color: #0b0b0b;
+  box-shadow: 0 10px 24px rgba(255,255,255,.10);
+}
+
+html[data-theme="light"] .vw-mode-toggle__button.active {
+  background: #111111;
+  color: #ffffff;
+  box-shadow: 0 10px 24px rgba(0,0,0,.10);
+}
+
+.vw-dow-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .7rem;
+  margin-top: .5rem;
+}
+
+.vw-dow-pill {
+  border: 1px solid var(--line);
+  background: rgba(255,255,255,.03);
+  color: var(--ink);
+  border-radius: 999px;
+  padding: .9rem 1.15rem;
+  font-weight: 800;
+  min-width: 5.25rem;
+  transition: .18s ease;
+}
+
+html[data-theme="light"] .vw-dow-pill {
+  background: rgba(0,0,0,.03);
+}
+
+.vw-dow-pill:hover {
+  background-color: rgba(120, 215, 255, 0.12);
+}
+
+.vw-dow-pill.selected {
+  background-color: #ffffff;
+  color: #0b0b0b;
+  border-color: #ffffff;
+  box-shadow: 0 10px 28px rgba(255,255,255,.14);
+}
+
+html[data-theme="light"] .vw-dow-pill.selected {
+  background-color: #111111;
+  color: #ffffff;
+  border-color: #111111;
+  box-shadow: 0 10px 28px rgba(0,0,0,.10);
+}
+

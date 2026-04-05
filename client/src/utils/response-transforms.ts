@@ -43,7 +43,7 @@ export function transformMeetingResponse(response: MeetingResponse): Transformed
   };
 }
 
-function convertMeetingTimesAndDatesToLocal<M extends MeetingShortResponse>(meeting: M): Pick<M, 'minStartHour' | 'maxEndHour' | 'tentativeDates'> {
+function convertMeetingTimesAndDatesToLocal<M extends MeetingShortResponse>(meeting: M): Pick<M, 'minStartHour' | 'maxEndHour' | 'tentativeDates' | 'dateMode'> {
   const {
     startHour: localStartHour,
     endHour: localEndHour,
@@ -58,6 +58,7 @@ function convertMeetingTimesAndDatesToLocal<M extends MeetingShortResponse>(meet
     minStartHour: localStartHour,
     maxEndHour: localEndHour,
     tentativeDates: localDates,
+    dateMode: meeting.dateMode,
   };
 }
 
