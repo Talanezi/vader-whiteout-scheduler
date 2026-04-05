@@ -1,11 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import GenericSpinner from 'components/GenericSpinner';
 import NonFocusButton from 'components/NonFocusButton';
 import WeeklyViewTimePicker from './WeeklyTimeViewPicker';
 import './Meeting.css';
 import EditMeeting from './EditMeeting';
 import { useGetMeetingQuery } from 'slices/enhancedApi';
+import { useCreateMeetingMutation } from 'slices/api';
 import { getReqErrorMessage } from 'utils/requests.utils';
 import { useGetCurrentMeetingWithSelector } from 'utils/meetings.hooks';
 import { useSelfInfoIsPresent } from 'utils/auth.hooks';
@@ -15,20 +16,16 @@ import InfoModal from 'components/InfoModal';
 import { useToast } from 'components/Toast';
 import { resetSelection } from 'slices/availabilitiesSelection';
 import useSetTitle from 'utils/title.hook';
+import { ianaTzName } from 'utils/dates.utils';
 
 export default function Meeting() {
   const [isEditingMeeting, setIsEditingMeeting] = useState(false);
   const dispatch = useAppDispatch();
+  const navigate = useNavigate();
   const params = useParams();
   const meetingID = params.id;
   const skip = !meetingID;
   const { data, error } = useGetMeetingQuery(meetingID ?? '', { skip });
-
-  useEffect(() => {
-    if (data) {
-      console.log('MEETING DATA DEBUG', JSON.stringify(data, null, 2));
-    }
-  }, [data]);
 
   useEffect(() => {
     dispatch(setCurrentMeetingID(meetingID));
@@ -68,7 +65,7 @@ export default function Meeting() {
   }
   return (
     <div className="flex-grow-1">
-      <MeetingTitleRow setIsEditingMeeting={setIsEditingMeeting} />
+      <MeetingTitleRow setIsEditingMeeting={setIsEditingMeeting} navigate={navigate} />
       <MeetingAboutRow />
       <hr className="my-4 my-md-5" />
       <WeeklyViewTimePicker />
@@ -78,17 +75,33 @@ export default function Meeting() {
 
 const MeetingTitleRow = React.memo(function MeetingTitleRow({
   setIsEditingMeeting,
+  navigate,
 }: {
   setIsEditingMeeting: (val: boolean) => void;
+  navigate: ReturnType<typeof useNavigate>;
 }) {
-  const { name, meetingID } = useGetCurrentMeetingWithSelector(({ data: meeting }) => ({
+  const {
+    name,
+    meetingID,
+    about,
+    minStartHour,
+    maxEndHour,
+    tentativeDates,
+    dateMode,
+  } = useGetCurrentMeetingWithSelector(({ data: meeting }) => ({
     name: meeting?.name,
     meetingID: meeting?.meetingID,
+    about: meeting?.about,
+    minStartHour: meeting?.minStartHour,
+    maxEndHour: meeting?.maxEndHour,
+    tentativeDates: meeting?.tentativeDates,
+    dateMode: meeting?.dateMode,
   }));
   const isLoggedIn = useSelfInfoIsPresent();
   const [showMustBeLoggedInModal, setShowMustBeLoggedInModal] = useState(false);
   const [showClipboardFailedModal, setShowClipboardFailedModal] = useState(false);
   const { showToast } = useToast();
+  const [duplicateMeeting, { isLoading: isDuplicating }] = useCreateMeetingMutation();
 
   const shareUrl = useMemo(() => {
     if (!meetingID) return window.location.href;
@@ -118,6 +131,40 @@ const MeetingTitleRow = React.memo(function MeetingTitleRow({
     });
   };
 
+  const onClickDuplicateButton = async () => {
+    if (
+      !name ||
+      minStartHour === undefined ||
+      maxEndHour === undefined ||
+      !tentativeDates ||
+      !dateMode
+    ) {
+      return;
+    }
+
+    try {
+      const resp = await duplicateMeeting({
+        name: `${name} (Copy)`,
+        about: about ?? '',
+        timezone: ianaTzName,
+        minStartHour,
+        maxEndHour,
+        tentativeDates,
+        dateMode,
+      }).unwrap();
+
+      showToast({
+        msg: 'Meeting duplicated successfully',
+        msgType: 'success',
+        autoClose: true,
+      });
+
+      navigate(`/m/${resp.meetingID}`);
+    } catch (err) {
+      console.error('Failed to duplicate meeting:', err);
+    }
+  };
+
   return (
     <>
       <div className="d-flex align-items-center">
@@ -129,6 +176,13 @@ const MeetingTitleRow = React.memo(function MeetingTitleRow({
           onClick={onClickEditButton}
         >
           <span className="me-3 d-none d-md-inline">Edit</span> <PencilIcon />
+        </NonFocusButton>
+        <NonFocusButton
+          className="btn btn-outline-secondary ms-4 ps-3 ps-md-4 pe-3 d-flex align-items-center"
+          onClick={onClickDuplicateButton}
+          disabled={isDuplicating}
+        >
+          <span className="me-3 d-none d-md-inline">Duplicate</span> <DuplicateIcon />
         </NonFocusButton>
         <NonFocusButton
           className="btn btn-outline-primary ms-4 ps-3 ps-md-4 pe-3 d-flex align-items-center"
@@ -202,6 +256,15 @@ function PencilIcon() {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-pencil" viewBox="0 0 16 16" style={{ position: 'relative', top: '0.05em' }}>
       <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z" />
+    </svg>
+  );
+}
+
+function DuplicateIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16" style={{ position: 'relative', top: '0.05em' }}>
+      <path d="M4 1.5A1.5 1.5 0 0 0 2.5 3v8A1.5 1.5 0 0 0 4 12.5h7A1.5 1.5 0 0 0 12.5 11V3A1.5 1.5 0 0 0 11 1.5H4zm0 1h7a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5H4a.5.5 0 0 1-.5-.5V3A.5.5 0 0 1 4 2.5z"/>
+      <path d="M5 12.5v1A1.5 1.5 0 0 0 6.5 15h6A1.5 1.5 0 0 0 14 13.5v-8A1.5 1.5 0 0 0 12.5 4h-1v1h1a.5.5 0 0 1 .5.5v8a.5.5 0 0 1-.5.5h-6a.5.5 0 0 1-.5-.5v-1H5z"/>
     </svg>
   );
 }
