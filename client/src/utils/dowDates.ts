@@ -46,16 +46,27 @@ function getUtcSunday(d: Date): Date {
 }
 
 export function mapDowDateTimeToCurrentWeek(dateTimeString: string, weekOffset = 0): string {
-  const date = new Date(dateTimeString);
-  const anchorSunday = getUtcSunday(date);
+  const anchor = new Date(dateTimeString);
 
-  const curSunday = getUtcSunday(new Date());
-  curSunday.setUTCDate(curSunday.getUTCDate() + 7 * weekOffset);
+  const now = new Date();
+  const currentSunday = getUtcSunday(now);
 
-  const dayOffset = Math.round((curSunday.getTime() - anchorSunday.getTime()) / (1000 * 60 * 60 * 24));
+  const mapped = new Date(anchor);
+  mapped.setUTCFullYear(
+    currentSunday.getUTCFullYear(),
+    currentSunday.getUTCMonth(),
+    currentSunday.getUTCDate()
+  );
+  mapped.setUTCDate(currentSunday.getUTCDate() + anchor.getUTCDay());
 
-  const mapped = new Date(date);
-  mapped.setUTCDate(mapped.getUTCDate() + dayOffset);
+  if (mapped.getTime() <= now.getTime()) {
+    mapped.setUTCDate(mapped.getUTCDate() + 7);
+  }
+
+  if (weekOffset !== 0) {
+    mapped.setUTCDate(mapped.getUTCDate() + 7 * weekOffset);
+  }
+
   return mapped.toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
