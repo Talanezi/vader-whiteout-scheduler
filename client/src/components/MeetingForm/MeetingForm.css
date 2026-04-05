@@ -15,40 +15,62 @@
 }
 
 .meeting-times-picker {
-  border: 1px solid lightgray;
-  box-shadow: 0 0 5px gray;
-  background-color: white;  /* TODO: dark theme */
-  border-radius: 0.375rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+  background-color: rgba(10, 14, 22, 0.98);
+  color: #f4f4f4;
+  border-radius: 0.75rem;
   min-width: 10em;
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
 }
 
 .meeting-times-picker-top {
   padding: 0.375rem 0.75rem;
-  border-bottom: 1px solid lightgray;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.14);
+  color: #f4f4f4;
+  font-weight: 700;
 }
 
 .meeting-times-picker-left, .meeting-times-picker-right {
   list-style: none;
   padding: 0;
   margin: 0;
+  background: transparent;
 }
 
 .meeting-times-picker-left {
-  border-right: 1px solid lightgray;
+  border-right: 1px solid rgba(255, 255, 255, 0.14);
   max-height: 12em;
   overflow-y: scroll;
+}
+
+.meeting-times-picker-left::-webkit-scrollbar {
+  width: 10px;
+}
+
+.meeting-times-picker-left::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.meeting-times-picker-left::-webkit-scrollbar-thumb {
+  background: rgba(120, 215, 255, 0.28);
+  border-radius: 999px;
 }
 
 :is(.meeting-times-picker-left, .meeting-times-picker-right) > li {
   padding: 0.2rem 1.2rem;
   text-align: center;
+  color: #f4f4f4;
 }
 
 :is(.meeting-times-picker-left, .meeting-times-picker-right) > li.selected {
-  background-color: lightgray;
+  background-color: rgba(120, 215, 255, 0.24);
+  color: #ffffff;
+  font-weight: 700;
 }
 
 :is(.meeting-times-picker-left, .meeting-times-picker-right) > li:hover {
-  background-color: lightgray;
+  background-color: rgba(255, 255, 255, 0.10);
   cursor: pointer;
 }
