@@ -600,3 +600,12 @@ html[data-theme="dark"] input[type="time"]::-webkit-datetime-edit-ampm-field:act
   color: #ffffff !important;
 }
 
+
+html[data-theme="dark"],
+html[data-theme="dark"] body,
+html[data-theme="dark"] input,
+html[data-theme="dark"] select,
+html[data-theme="dark"] textarea {
+  color-scheme: dark !important;
+}
+
