@@ -12,7 +12,7 @@ import {
 } from "utils/dates.utils";
 import { getReqErrorMessage } from "utils/requests.utils";
 import type { TransformedMeetingShortResponse } from "utils/response-transforms";
-import { canonicalDowDates, canonicalDowLabels } from "utils/dowDates";
+import { canonicalDowDates, canonicalDowLabels, mapDowDateTimeToCurrentWeek } from "utils/dowDates";
 import styles from './Profile.module.css';
 
 export default function CreatedMeetings({showCreatedMeetings}: {showCreatedMeetings: boolean}) {
@@ -112,7 +112,12 @@ function ScheduleInfo({meeting}: {meeting: TransformedMeetingShortResponse}) {
       </p>
     );
   }
-  const [year, month, day] = getLocalYearMonthDayFromDate(new Date(meeting.scheduledStartDateTime));
+  const displayDateTime =
+    meeting.dateMode === 'dow'
+      ? mapDowDateTimeToCurrentWeek(meeting.scheduledStartDateTime)
+      : meeting.scheduledStartDateTime;
+
+  const [year, month, day] = getLocalYearMonthDayFromDate(new Date(displayDateTime));
   return (
     <div className="my-auto ps-4 pe-5 d-flex flex-column align-items-center">
       <span>{getMonthAbbr(month - 1)}</span>
@@ -161,8 +166,17 @@ function meetingTimesRangeString(meeting: TransformedMeetingShortResponse): stri
   let startHour: number | undefined;
   let endHour: number | undefined;
   if (meeting.scheduledStartDateTime !== undefined && meeting.scheduledEndDateTime !== undefined) {
-    startHour = convertDateTimeStringToHourDecimal(meeting.scheduledStartDateTime);
-    endHour = convertDateTimeStringToHourDecimal(meeting.scheduledEndDateTime);
+    const startDateTime =
+      meeting.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(meeting.scheduledStartDateTime)
+        : meeting.scheduledStartDateTime;
+    const endDateTime =
+      meeting.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(meeting.scheduledEndDateTime)
+        : meeting.scheduledEndDateTime;
+
+    startHour = convertDateTimeStringToHourDecimal(startDateTime);
+    endHour = convertDateTimeStringToHourDecimal(endDateTime);
   } else {
     startHour = meeting.minStartHour;
     endHour = meeting.maxEndHour;

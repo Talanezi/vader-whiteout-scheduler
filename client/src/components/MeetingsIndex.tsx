@@ -10,7 +10,7 @@ import {
   tzAbbr,
 } from 'utils/dates.utils';
 import type { TransformedMeetingShortResponse } from 'utils/response-transforms';
-import { canonicalDowDates, canonicalDowLabels } from 'utils/dowDates';
+import { canonicalDowDates, canonicalDowLabels, mapDowDateTimeToCurrentWeek } from 'utils/dowDates';
 
 function shortDateString(date: string): string {
   const [, month, day] = getYearMonthDayFromDateString(date);
@@ -39,8 +39,17 @@ function meetingTimesRangeString(meeting: TransformedMeetingShortResponse): stri
   let endHour: number;
 
   if (meeting.scheduledStartDateTime && meeting.scheduledEndDateTime) {
-    startHour = convertDateTimeStringToHourDecimal(meeting.scheduledStartDateTime);
-    endHour = convertDateTimeStringToHourDecimal(meeting.scheduledEndDateTime);
+    const startDateTime =
+      meeting.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(meeting.scheduledStartDateTime)
+        : meeting.scheduledStartDateTime;
+    const endDateTime =
+      meeting.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(meeting.scheduledEndDateTime)
+        : meeting.scheduledEndDateTime;
+
+    startHour = convertDateTimeStringToHourDecimal(startDateTime);
+    endHour = convertDateTimeStringToHourDecimal(endDateTime);
   } else {
     startHour = meeting.minStartHour;
     endHour = meeting.maxEndHour;
@@ -51,7 +60,11 @@ function meetingTimesRangeString(meeting: TransformedMeetingShortResponse): stri
 
 function meetingDateLabel(meeting: TransformedMeetingShortResponse): string {
   if (meeting.scheduledStartDateTime) {
-    return new Date(meeting.scheduledStartDateTime).toLocaleDateString();
+    const displayDateTime =
+      meeting.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(meeting.scheduledStartDateTime)
+        : meeting.scheduledStartDateTime;
+    return new Date(displayDateTime).toLocaleDateString();
   }
   if (meeting.dateMode === 'dow') {
     return recurringDowLabel(meeting);
@@ -109,12 +122,23 @@ export default function MeetingsIndex() {
   }
 
   const now = Date.now();
-  const current = data.meetings.filter(
-    (m) => !m.scheduledStartDateTime || Date.parse(m.scheduledStartDateTime) >= now
-  );
-  const previous = data.meetings.filter(
-    (m) => m.scheduledStartDateTime && Date.parse(m.scheduledStartDateTime) < now
-  );
+  const current = data.meetings.filter((m) => {
+    if (!m.scheduledStartDateTime) return true;
+    const start =
+      m.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(m.scheduledStartDateTime)
+        : m.scheduledStartDateTime;
+    return Date.parse(start) >= now;
+  });
+
+  const previous = data.meetings.filter((m) => {
+    if (!m.scheduledStartDateTime) return false;
+    const start =
+      m.dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(m.scheduledStartDateTime)
+        : m.scheduledStartDateTime;
+    return Date.parse(start) < now;
+  });
 
   return (
     <div className="d-flex flex-column align-items-center" style={{ gap: '1rem' }}>

@@ -31,6 +31,7 @@ import { selectCurrentMeetingID } from 'slices/currentMeeting';
 import InfoModal from 'components/InfoModal';
 import NonFocusButton from 'components/NonFocusButton';
 import DeleteRespondentModal from './DeleteRespondentModal';
+import { mapDowDateTimeToCurrentWeek } from 'utils/dowDates';
 
 const TEMPLATE_KEY = 'vw_availability_template_v1';
 
@@ -105,12 +106,13 @@ function AvailabilitiesRow({
   const selMode = useAppSelector(selectSelMode);
   const selectedTimes = useAppSelector(selectSelectedTimes);
   const meetingID = useAppSelector(selectCurrentMeetingID);
-  const { respondents, selfRespondentID, scheduledStartDateTime, scheduledEndDateTime } = useGetCurrentMeetingWithSelector(
+  const { respondents, selfRespondentID, scheduledStartDateTime, scheduledEndDateTime, dateMode } = useGetCurrentMeetingWithSelector(
     ({ data: meeting }) => ({
       respondents: meeting?.respondents,
       selfRespondentID: meeting?.selfRespondentID,
       scheduledStartDateTime: meeting?.scheduledStartDateTime,
       scheduledEndDateTime: meeting?.scheduledEndDateTime,
+      dateMode: meeting?.dateMode ?? 'specific',
     })
   );
   assert(meetingID !== undefined && respondents !== undefined);
@@ -122,8 +124,19 @@ function AvailabilitiesRow({
     if (scheduledStartDateTime === undefined || scheduledEndDateTime === undefined) {
       return null;
     }
-    return createTitleWithSchedule(scheduledStartDateTime, scheduledEndDateTime);
-  }, [scheduledStartDateTime, scheduledEndDateTime]);
+
+    const startDateTime =
+      dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(scheduledStartDateTime)
+        : scheduledStartDateTime;
+
+    const endDateTime =
+      dateMode === 'dow'
+        ? mapDowDateTimeToCurrentWeek(scheduledEndDateTime)
+        : scheduledEndDateTime;
+
+    return createTitleWithSchedule(startDateTime, endDateTime);
+  }, [scheduledStartDateTime, scheduledEndDateTime, dateMode]);
 
   const isLoggedIn = useAppSelector(selectTokenIsPresent);
   const editSelf = useEditSelf(isLoggedIn);
@@ -338,14 +351,29 @@ function AvailabilitiesRow({
         setShowInfoModal(true);
         return;
       }
+      const startDateTime =
+        dateMode === 'dow'
+          ? mapDowDateTimeToCurrentWeek(selectedTimesFlat[0])
+          : selectedTimesFlat[0];
+
+      const endDateTime =
+        dateMode === 'dow'
+          ? mapDowDateTimeToCurrentWeek(
+              addMinutesToDateTimeString(
+                selectedTimesFlat[selectedTimesFlat.length - 1],
+                30
+              )
+            )
+          : addMinutesToDateTimeString(
+              selectedTimesFlat[selectedTimesFlat.length - 1],
+              30
+            );
+
       schedule({
         id: meetingID,
         scheduleMeetingDto: {
-          startDateTime: selectedTimesFlat[0],
-          endDateTime: addMinutesToDateTimeString(
-            selectedTimesFlat[selectedTimesFlat.length - 1],
-            30
-          ),
+          startDateTime,
+          endDateTime,
         },
       });
     };
