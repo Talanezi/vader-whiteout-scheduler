@@ -10,6 +10,14 @@ import Calendar from "components/DayPicker/Calendar";
 import 'components/DayPicker/DayPicker.css';
 import 'components/MeetingForm/MeetingForm.css';
 import { resetSelectedDates, selectSelectedDates, setSelectedDates } from "slices/selectedDates";
+import { resetDateSelectionMode, selectDateSelectionMode, setDateSelectionMode } from "slices/dateSelectionMode";
+import {
+  addWeekday,
+  removeWeekday,
+  resetSelectedWeekdays,
+  selectSelectedWeekdays,
+  setSelectedWeekdays,
+} from "slices/selectedWeekdays";
 import { arrayToObject } from "utils/arrays.utils";
 import { useToast } from "components/Toast";
 import DeleteMeetingModal from "./DeleteMeetingModal";
@@ -17,6 +25,12 @@ import ButtonWithSpinner from "components/ButtonWithSpinner";
 import { EditMeetingDto, useEditMeetingMutation } from "slices/api";
 import { getReqErrorMessage, useMutationWithPersistentError } from "utils/requests.utils";
 import { ianaTzName } from "utils/dates.utils";
+import {
+  areAllDatesCanonicalDow,
+  canonicalDowLabels,
+  canonicalDowDates,
+  selectedWeekdaysToCanonicalDates,
+} from "utils/dowDates";
 import { useGetCurrentMeetingWithSelector } from "utils/meetings.hooks";
 import { assert, scrollUpIntoViewIfNeeded } from "utils/misc.utils";
 
@@ -36,21 +50,42 @@ export default function EditMeeting({
   const [startTime, setStartTime] = useState(Math.floor(meeting.minStartHour));
   const [endTime, setEndTime] = useState(Math.ceil(meeting.maxEndHour));
   const selectedDates = useAppSelector(selectSelectedDates);
+  const dateSelectionMode = useAppSelector(selectDateSelectionMode);
+  const selectedWeekdays = useAppSelector(selectSelectedWeekdays);
   const [editMeeting, {isLoading, isSuccess, error}] = useMutationWithPersistentError(useEditMeetingMutation);
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
 
   useEffect(() => {
-    // Reset the selectedDates when unmounting
     return () => {
       dispatch(resetSelectedDates());
+      dispatch(resetSelectedWeekdays());
+      dispatch(resetDateSelectionMode());
     };
   }, [dispatch]);
 
   // FIXME: This seems to run twice during the first render
   useEffect(() => {
-    dispatch(setSelectedDates(arrayToObject(meeting.tentativeDates)));
-  }, [dispatch, meeting.tentativeDates]);
+    const isDowMeeting =
+      meeting.dateMode === 'dow' || areAllDatesCanonicalDow(meeting.tentativeDates);
+
+    if (isDowMeeting) {
+      dispatch(setDateSelectionMode('dow'));
+      dispatch(resetSelectedDates());
+      dispatch(setSelectedWeekdays(
+        Object.fromEntries(
+          meeting.tentativeDates
+            .map((d) => canonicalDowDates.indexOf(d))
+            .filter((idx) => idx >= 0)
+            .map((idx) => [idx, true])
+        )
+      ));
+    } else {
+      dispatch(setDateSelectionMode('specific'));
+      dispatch(resetSelectedWeekdays());
+      dispatch(setSelectedDates(arrayToObject(meeting.tentativeDates)));
+    }
+  }, [dispatch, meeting.tentativeDates, meeting.dateMode]);
 
   useEffect(() => {
     if (isSuccess) {
@@ -76,16 +111,25 @@ export default function EditMeeting({
     if (meetingAbout !== meeting.about) {
       body.about = meetingAbout;
     }
-    const selectedDatesFlat = Object.keys(selectedDates).sort();
+    const nextTentativeDates =
+      dateSelectionMode === 'specific'
+        ? Object.keys(selectedDates).sort()
+        : selectedWeekdaysToCanonicalDates(selectedWeekdays);
+
     const datesChanged =
-      selectedDatesFlat.length !== meeting.tentativeDates.length
-      || selectedDatesFlat.some((s, i) => s !== meeting.tentativeDates[i]);
+      nextTentativeDates.length !== meeting.tentativeDates.length
+      || nextTentativeDates.some((s, i) => s !== meeting.tentativeDates[i]);
+
     const timesChanged =
       startTime !== meeting.minStartHour
       || endTime !== meeting.maxEndHour;
-    if (datesChanged || timesChanged) {
-      // dates, start/end times and timezone must all be set together
-      body.tentativeDates = selectedDatesFlat;
+
+    const dateModeChanged =
+      dateSelectionMode !== (meeting.dateMode ?? 'specific');
+
+    if (datesChanged || timesChanged || dateModeChanged) {
+      body.tentativeDates = nextTentativeDates;
+      body.dateMode = dateSelectionMode;
       body.minStartHour = startTime;
       body.maxEndHour = endTime;
       body.timezone = ianaTzName;
@@ -107,7 +151,51 @@ export default function EditMeeting({
       <MeetingAboutPrompt {...{meetingAbout, setMeetingAbout}} />
       <div className="create-meeting-form-group">
         <p className="fs-5">On which days would you like to meet?</p>
-        <Calendar firstVisibleDate={meeting.tentativeDates[0]} />
+
+        <div className="vw-calendar-topline">
+          <div className="vw-mode-toggle" role="tablist" aria-label="Date selection mode">
+            <button
+              type="button"
+              className={`vw-mode-toggle__button ${dateSelectionMode === 'specific' ? 'active' : ''}`}
+              onClick={() => dispatch(setDateSelectionMode('specific'))}
+            >
+              Specific dates
+            </button>
+            <button
+              type="button"
+              className={`vw-mode-toggle__button ${dateSelectionMode === 'dow' ? 'active' : ''}`}
+              onClick={() => dispatch(setDateSelectionMode('dow'))}
+            >
+              Days of week
+            </button>
+          </div>
+        </div>
+
+        {dateSelectionMode === 'specific' ? (
+          <Calendar firstVisibleDate={meeting.tentativeDates[0]} />
+        ) : (
+          <div className="vw-dow-picker">
+            {canonicalDowLabels.map((label, index) => {
+              const selected = !!selectedWeekdays[index];
+              return (
+                <button
+                  key={label}
+                  type="button"
+                  className={`vw-dow-pill ${selected ? 'selected' : ''}`}
+                  onClick={() => {
+                    if (selected) {
+                      dispatch(removeWeekday(index));
+                    } else {
+                      dispatch(addWeekday(index));
+                    }
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
       <div className="d-md-flex align-items-md-end">
         <MeetingTimesPrompt {...{startTime, setStartTime, endTime, setEndTime}} />
