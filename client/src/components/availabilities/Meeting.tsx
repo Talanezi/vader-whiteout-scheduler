@@ -25,6 +25,12 @@ export default function Meeting() {
   const { data, error } = useGetMeetingQuery(meetingID ?? '', { skip });
 
   useEffect(() => {
+    if (data) {
+      console.log('MEETING DATA DEBUG', JSON.stringify(data, null, 2));
+    }
+  }, [data]);
+
+  useEffect(() => {
     dispatch(setCurrentMeetingID(meetingID));
   }, [dispatch, meetingID]);
 
