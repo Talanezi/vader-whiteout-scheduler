@@ -434,35 +434,69 @@ function AvailabilitiesRow({
 
         <div className="d-flex align-items-center flex-wrap gap-3">
           {(selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') && (
-            <div className="d-flex align-items-center flex-wrap gap-2">
-              <NonFocusButton
-                className={`btn ${selectionKind === 'available' ? 'btn-primary' : 'btn-outline-secondary'} meeting-avl-button`}
-                onClick={() => dispatch(setSelectionKind('available'))}
-                disabled={btnDisabled}
-              >
-                Available
-              </NonFocusButton>
-              <NonFocusButton
-                className={`btn ${selectionKind === 'ifNeeded' ? 'btn-warning' : 'btn-outline-secondary'} meeting-avl-button`}
-                onClick={() => dispatch(setSelectionKind('ifNeeded'))}
-                disabled={btnDisabled}
-              >
-                If needed
-              </NonFocusButton>
+            <div className="meeting-mode-tools">
+              <div className="meeting-mode-card">
+                <div className="meeting-mode-label">Availability type</div>
+                <div className="meeting-mode-help">
+                  Blue means preferred. Yellow means you can make it work if necessary.
+                </div>
+                <div className="meeting-mode-toggle" role="tablist" aria-label="Availability type">
+                  <NonFocusButton
+                    className={`meeting-mode-pill meeting-mode-pill-available ${
+                      selectionKind === 'available' ? 'is-active' : ''
+                    }`}
+                    onClick={() => dispatch(setSelectionKind('available'))}
+                    disabled={btnDisabled}
+                  >
+                    Available
+                  </NonFocusButton>
+                  <NonFocusButton
+                    className={`meeting-mode-pill meeting-mode-pill-ifneeded ${
+                      selectionKind === 'ifNeeded' ? 'is-active' : ''
+                    }`}
+                    onClick={() => dispatch(setSelectionKind('ifNeeded'))}
+                    disabled={btnDisabled}
+                  >
+                    If needed
+                  </NonFocusButton>
+                </div>
+              </div>
+
+              {canUseTemplate && (
+                <div className="meeting-template-tools">
+                  <div className="meeting-template-label">Weekday template</div>
+                  <div className="d-flex align-items-center flex-wrap gap-2">
+                    <NonFocusButton
+                      className="btn btn-outline-secondary meeting-avl-button meeting-template-button"
+                      onClick={onSaveTemplate}
+                      disabled={btnDisabled}
+                    >
+                      Save template
+                    </NonFocusButton>
+                    <NonFocusButton
+                      className="btn btn-outline-secondary meeting-avl-button meeting-template-button"
+                      onClick={onApplyTemplate}
+                      disabled={btnDisabled}
+                    >
+                      Apply template
+                    </NonFocusButton>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
-          {canUseTemplate && (
+          {canUseTemplate && !(selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') && (
             <>
               <NonFocusButton
-                className="btn btn-outline-secondary meeting-avl-button"
+                className="btn btn-outline-secondary meeting-avl-button meeting-template-button"
                 onClick={onSaveTemplate}
                 disabled={btnDisabled}
               >
                 Save template
               </NonFocusButton>
               <NonFocusButton
-                className="btn btn-outline-secondary meeting-avl-button"
+                className="btn btn-outline-secondary meeting-avl-button meeting-template-button"
                 onClick={onApplyTemplate}
                 disabled={btnDisabled}
               >
