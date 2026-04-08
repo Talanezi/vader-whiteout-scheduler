@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 import NonFocusButton from 'components/NonFocusButton';
 import { useToast } from 'components/Toast';
@@ -31,6 +32,14 @@ type SavedTemplate = {
   preview: string;
   createdAt: string;
   updatedAt: string;
+};
+
+type TemplateBuilderState = {
+  id: string | null;
+  name: string;
+  weekdays: number[];
+  startTime: string;
+  endTime: string;
 };
 
 function loadTemplates(): SavedTemplate[] {
@@ -253,6 +262,75 @@ function TemplateMiniPreview({ slots }: { slots: TemplateSlot[] }) {
   );
 }
 
+function parseTimeInput(value: string) {
+  const [hourStr, minuteStr] = value.split(':');
+  return {
+    hour: Number(hourStr),
+    minute: Number(minuteStr),
+  };
+}
+
+function makeSlotsFromBuilder(weekdays: number[], startTime: string, endTime: string): TemplateSlot[] {
+  const start = parseTimeInput(startTime);
+  const end = parseTimeInput(endTime);
+
+  const startMinutes = start.hour * 60 + start.minute;
+  const endMinutes = end.hour * 60 + end.minute;
+
+  if (
+    Number.isNaN(startMinutes) ||
+    Number.isNaN(endMinutes) ||
+    weekdays.length === 0 ||
+    endMinutes <= startMinutes
+  ) {
+    return [];
+  }
+
+  const slots: TemplateSlot[] = [];
+
+  for (const weekday of weekdays) {
+    for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
+      slots.push({
+        weekday,
+        hour: Math.floor(minutes / 60),
+        minute: minutes % 60,
+      });
+    }
+  }
+
+  return slots;
+}
+
+function buildTemplateBuilderState(template?: SavedTemplate): TemplateBuilderState {
+  if (!template) {
+    return {
+      id: null,
+      name: '',
+      weekdays: [],
+      startTime: '18:00',
+      endTime: '22:00',
+    };
+  }
+
+  const weekdays = [...new Set(template.slots.map((slot) => slot.weekday))].sort((a, b) => a - b);
+  const sorted = template.slots.slice().sort(
+    (a, b) => a.weekday - b.weekday || a.hour - b.hour || a.minute - b.minute
+  );
+  const first = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const endMinutes = last.hour * 60 + last.minute + 30;
+  const endHour = String(Math.floor(endMinutes / 60)).padStart(2, '0');
+  const endMinute = String(endMinutes % 60).padStart(2, '0');
+
+  return {
+    id: template.id,
+    name: template.name,
+    weekdays,
+    startTime: `${String(first.hour).padStart(2, '0')}:${String(first.minute).padStart(2, '0')}`,
+    endTime: `${endHour}:${endMinute}`,
+  };
+}
+
 export default function WeeklyTemplatesStrip({
   allDateStrings,
 }: {
@@ -268,6 +346,10 @@ export default function WeeklyTemplatesStrip({
   const [templates, setTemplates] = useState<SavedTemplate[]>([]);
   const [selectedTemplateID, setSelectedTemplateID] = useState('');
   const [showManageTemplatesModal, setShowManageTemplatesModal] = useState(false);
+  const [showTemplateBuilderModal, setShowTemplateBuilderModal] = useState(false);
+  const [templateBuilder, setTemplateBuilder] = useState<TemplateBuilderState>(
+    buildTemplateBuilderState()
+  );
 
   useEffect(() => {
     const loadedTemplates = loadTemplates();
@@ -347,13 +429,87 @@ export default function WeeklyTemplatesStrip({
   };
 
   const openTemplateBuilderStub = (template?: SavedTemplate) => {
-    showToast({
-      msg: template
-        ? `Template editor for "${template.name}" is next`
-        : 'Weekly template builder is next',
-      msgType: 'success',
-      autoClose: true,
-    });
+    setTemplateBuilder(buildTemplateBuilderState(template));
+    setShowTemplateBuilderModal(true);
+  };
+
+  const toggleBuilderWeekday = (weekday: number) => {
+    setTemplateBuilder((currentBuilder) => ({
+      ...currentBuilder,
+      weekdays: currentBuilder.weekdays.includes(weekday)
+        ? currentBuilder.weekdays.filter((day) => day !== weekday)
+        : [...currentBuilder.weekdays, weekday].sort((a, b) => a - b),
+    }));
+  };
+
+  const saveTemplateFromBuilder = () => {
+    const name = templateBuilder.name.trim();
+    const slots = makeSlotsFromBuilder(
+      templateBuilder.weekdays,
+      templateBuilder.startTime,
+      templateBuilder.endTime
+    );
+
+    if (!name) {
+      showToast({
+        msg: 'Template name is required',
+        msgType: 'success',
+        autoClose: true,
+      });
+      return;
+    }
+
+    if (slots.length === 0) {
+      showToast({
+        msg: 'Choose at least one weekday and a valid time range',
+        msgType: 'success',
+        autoClose: true,
+      });
+      return;
+    }
+
+    const now = new Date().toISOString();
+    const preview = summarizeTemplateSlots(slots);
+
+    if (templateBuilder.id) {
+      const nextTemplates = templates.map((template) =>
+        template.id === templateBuilder.id
+          ? {
+              ...template,
+              name,
+              slots,
+              preview,
+              updatedAt: now,
+            }
+          : template
+      );
+      persistTemplates(nextTemplates);
+      setSelectedTemplateID(templateBuilder.id);
+      showToast({
+        msg: 'Template updated',
+        msgType: 'success',
+        autoClose: true,
+      });
+    } else {
+      const template: SavedTemplate = {
+        id: makeTemplateID(),
+        name,
+        slots,
+        preview,
+        createdAt: now,
+        updatedAt: now,
+      };
+      const nextTemplates = [...templates, template];
+      persistTemplates(nextTemplates);
+      setSelectedTemplateID(template.id);
+      showToast({
+        msg: 'Template created',
+        msgType: 'success',
+        autoClose: true,
+      });
+    }
+
+    setShowTemplateBuilderModal(false);
   };
 
   return (
@@ -522,6 +678,106 @@ export default function WeeklyTemplatesStrip({
             onClick={() => setShowManageTemplatesModal(false)}
           >
             Done
+          </NonFocusButton>
+        </Modal.Footer>
+      </Modal>
+
+      <Modal
+        backdrop="static"
+        show={showTemplateBuilderModal}
+        onHide={() => setShowTemplateBuilderModal(false)}
+        centered
+        dialogClassName="meeting-template-builder-modal"
+      >
+        <Modal.Header closeButton className="border-bottom-0 pb-2">
+          <Modal.Title>
+            {templateBuilder.id ? 'Edit Template' : 'Add Template'}
+          </Modal.Title>
+        </Modal.Header>
+
+        <Modal.Body className="meeting-template-builder-body">
+          <Form.Group className="mb-3">
+            <Form.Label className="form-text-label">Template name</Form.Label>
+            <Form.Control
+              value={templateBuilder.name}
+              onChange={(event) =>
+                setTemplateBuilder((currentBuilder) => ({
+                  ...currentBuilder,
+                  name: event.target.value,
+                }))
+              }
+              placeholder="e.g. Weeknight evenings"
+            />
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label className="form-text-label">Days of week</Form.Label>
+            <div className="template-builder-weekdays">
+              {[
+                { day: 0, label: 'Sun' },
+                { day: 1, label: 'Mon' },
+                { day: 2, label: 'Tue' },
+                { day: 3, label: 'Wed' },
+                { day: 4, label: 'Thu' },
+                { day: 5, label: 'Fri' },
+                { day: 6, label: 'Sat' },
+              ].map(({ day, label }) => (
+                <NonFocusButton
+                  key={day}
+                  className={`template-builder-weekday-pill ${
+                    templateBuilder.weekdays.includes(day) ? 'is-active' : ''
+                  }`}
+                  onClick={() => toggleBuilderWeekday(day)}
+                >
+                  {label}
+                </NonFocusButton>
+              ))}
+            </div>
+          </Form.Group>
+
+          <div className="template-builder-time-row">
+            <Form.Group>
+              <Form.Label className="form-text-label">Start time</Form.Label>
+              <Form.Control
+                type="time"
+                value={templateBuilder.startTime}
+                onChange={(event) =>
+                  setTemplateBuilder((currentBuilder) => ({
+                    ...currentBuilder,
+                    startTime: event.target.value,
+                  }))
+                }
+              />
+            </Form.Group>
+
+            <Form.Group>
+              <Form.Label className="form-text-label">End time</Form.Label>
+              <Form.Control
+                type="time"
+                value={templateBuilder.endTime}
+                onChange={(event) =>
+                  setTemplateBuilder((currentBuilder) => ({
+                    ...currentBuilder,
+                    endTime: event.target.value,
+                  }))
+                }
+              />
+            </Form.Group>
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer className="border-top-0 pt-2">
+          <NonFocusButton
+            className="btn btn-outline-secondary custom-btn-min-width"
+            onClick={() => setShowTemplateBuilderModal(false)}
+          >
+            Cancel
+          </NonFocusButton>
+          <NonFocusButton
+            className="btn btn-primary custom-btn-min-width"
+            onClick={saveTemplateFromBuilder}
+          >
+            {templateBuilder.id ? 'Save Changes' : 'Create Template'}
           </NonFocusButton>
         </Modal.Footer>
       </Modal>

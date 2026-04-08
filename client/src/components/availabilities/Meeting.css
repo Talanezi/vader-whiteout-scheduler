@@ -786,3 +786,58 @@
   --bs-btn-hover-bg: #ffffff;
   --bs-btn-hover-border-color: #ffffff;
 }
+
+/* --- template builder modal --- */
+.meeting-template-builder-modal .modal-content {
+  background: rgba(7, 10, 16, 0.97);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+
+.meeting-template-builder-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.template-builder-weekdays {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.template-builder-weekday-pill {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+  color: rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  padding: 0.58rem 0.9rem;
+  font-weight: 700;
+  transition: all 140ms ease;
+}
+
+.template-builder-weekday-pill.is-active {
+  color: #dff0ff;
+  background: rgba(39, 115, 255, 0.18);
+  border-color: rgba(88, 157, 255, 0.65);
+  box-shadow: 0 0 0 1px rgba(88, 157, 255, 0.2), 0 8px 20px rgba(39, 115, 255, 0.18);
+}
+
+.template-builder-time-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+@media (max-width: 767.98px) {
+  .template-builder-time-row {
+    grid-template-columns: 1fr;
+  }
+
+  .template-builder-weekday-pill {
+    flex: 1 1 calc(50% - 0.55rem);
+    justify-content: center;
+  }
+}
