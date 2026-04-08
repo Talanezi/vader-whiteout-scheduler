@@ -521,3 +521,10 @@
     flex: 1 1 100%;
   }
 }
+
+/* --- desktop spacing tweak: push respondents lower under availability controls --- */
+@media (min-width: 768px) {
+  .respondents-container.vw-respondents-card {
+    margin-top: 7.25rem;
+  }
+}
