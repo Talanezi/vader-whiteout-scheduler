@@ -159,6 +159,7 @@ function meetingToMeetingResponse(
         respondentID: respondent.RespondentID,
         name,
         availabilities: respondent.Availabilities,
+        ifNeededAvailabilities: respondent.IfNeededAvailabilities ?? [],
       };
     }),
   };
