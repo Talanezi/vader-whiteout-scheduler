@@ -9,6 +9,9 @@ export class MeetingRespondent {
 
   @ApiProperty({ example: ['2022-10-23T10:00:00Z', '2022-10-23T10:30:00Z'] })
   availabilities: string[];
+
+  @ApiPropertyOptional({ example: ['2022-10-23T11:00:00Z', '2022-10-23T11:30:00Z'] })
+  ifNeededAvailabilities?: string[];
 }
 
 export default class MeetingResponse {
