@@ -37,9 +37,7 @@ type SavedTemplate = {
 type TemplateBuilderState = {
   id: string | null;
   name: string;
-  weekdays: number[];
-  startTime: string;
-  endTime: string;
+  slots: TemplateSlot[];
 };
 
 function loadTemplates(): SavedTemplate[] {
@@ -262,73 +260,41 @@ function TemplateMiniPreview({ slots }: { slots: TemplateSlot[] }) {
   );
 }
 
-function parseTimeInput(value: string) {
-  const [hourStr, minuteStr] = value.split(':');
-  return {
-    hour: Number(hourStr),
-    minute: Number(minuteStr),
-  };
-}
-
-function makeSlotsFromBuilder(weekdays: number[], startTime: string, endTime: string): TemplateSlot[] {
-  const start = parseTimeInput(startTime);
-  const end = parseTimeInput(endTime);
-
-  const startMinutes = start.hour * 60 + start.minute;
-  const endMinutes = end.hour * 60 + end.minute;
-
-  if (
-    Number.isNaN(startMinutes) ||
-    Number.isNaN(endMinutes) ||
-    weekdays.length === 0 ||
-    endMinutes <= startMinutes
-  ) {
-    return [];
-  }
-
-  const slots: TemplateSlot[] = [];
-
-  for (const weekday of weekdays) {
-    for (let minutes = startMinutes; minutes < endMinutes; minutes += 30) {
-      slots.push({
-        weekday,
-        hour: Math.floor(minutes / 60),
-        minute: minutes % 60,
-      });
-    }
-  }
-
-  return slots;
-}
-
 function buildTemplateBuilderState(template?: SavedTemplate): TemplateBuilderState {
   if (!template) {
     return {
       id: null,
       name: '',
-      weekdays: [],
-      startTime: '18:00',
-      endTime: '22:00',
+      slots: [],
     };
   }
-
-  const weekdays = [...new Set(template.slots.map((slot) => slot.weekday))].sort((a, b) => a - b);
-  const sorted = template.slots.slice().sort(
-    (a, b) => a.weekday - b.weekday || a.hour - b.hour || a.minute - b.minute
-  );
-  const first = sorted[0];
-  const last = sorted[sorted.length - 1];
-  const endMinutes = last.hour * 60 + last.minute + 30;
-  const endHour = String(Math.floor(endMinutes / 60)).padStart(2, '0');
-  const endMinute = String(endMinutes % 60).padStart(2, '0');
 
   return {
     id: template.id,
     name: template.name,
-    weekdays,
-    startTime: `${String(first.hour).padStart(2, '0')}:${String(first.minute).padStart(2, '0')}`,
-    endTime: `${endHour}:${endMinute}`,
+    slots: template.slots.slice().sort(
+      (a, b) => a.weekday - b.weekday || a.hour - b.hour || a.minute - b.minute
+    ),
   };
+}
+
+function hasBuilderSlot(slots: TemplateSlot[], weekday: number, hour: number, minute: number) {
+  return slots.some(
+    (slot) => slot.weekday === weekday && slot.hour === hour && slot.minute === minute
+  );
+}
+
+function toggleBuilderSlot(slots: TemplateSlot[], weekday: number, hour: number, minute: number) {
+  const exists = hasBuilderSlot(slots, weekday, hour, minute);
+  if (exists) {
+    return slots.filter(
+      (slot) => !(slot.weekday === weekday && slot.hour === hour && slot.minute === minute)
+    );
+  }
+
+  return [...slots, { weekday, hour, minute }].sort(
+    (a, b) => a.weekday - b.weekday || a.hour - b.hour || a.minute - b.minute
+  );
 }
 
 export default function WeeklyTemplatesStrip({
@@ -433,21 +399,22 @@ export default function WeeklyTemplatesStrip({
     setShowTemplateBuilderModal(true);
   };
 
-  const toggleBuilderWeekday = (weekday: number) => {
-    setTemplateBuilder((currentBuilder) => ({
-      ...currentBuilder,
-      weekdays: currentBuilder.weekdays.includes(weekday)
-        ? currentBuilder.weekdays.filter((day) => day !== weekday)
-        : [...currentBuilder.weekdays, weekday].sort((a, b) => a - b),
-    }));
-  };
+  const builderWeekdays = [
+    { day: 0, label: 'Sun' },
+    { day: 1, label: 'Mon' },
+    { day: 2, label: 'Tue' },
+    { day: 3, label: 'Wed' },
+    { day: 4, label: 'Thu' },
+    { day: 5, label: 'Fri' },
+    { day: 6, label: 'Sat' },
+  ];
+
+  const builderHours = Array.from({ length: 16 }, (_, idx) => 8 + idx);
 
   const saveTemplateFromBuilder = () => {
     const name = templateBuilder.name.trim();
-    const slots = makeSlotsFromBuilder(
-      templateBuilder.weekdays,
-      templateBuilder.startTime,
-      templateBuilder.endTime
+    const slots = templateBuilder.slots.slice().sort(
+      (a, b) => a.weekday - b.weekday || a.hour - b.hour || a.minute - b.minute
     );
 
     if (!name) {
@@ -547,13 +514,6 @@ export default function WeeklyTemplatesStrip({
 
           <div className="meeting-template-actions meeting-template-actions-inline">
             <NonFocusButton
-              className="btn btn-primary meeting-avl-button"
-              onClick={onApplyTemplate}
-              disabled={!selectedTemplate}
-            >
-              Apply
-            </NonFocusButton>
-            <NonFocusButton
               className="btn btn-outline-secondary meeting-avl-button"
               onClick={onSaveTemplate}
             >
@@ -564,7 +524,7 @@ export default function WeeklyTemplatesStrip({
               onClick={() => setShowManageTemplatesModal(true)}
               disabled={templates.length === 0}
             >
-              Library
+              Template Studio
             </NonFocusButton>
           </div>
         </div>
@@ -710,59 +670,47 @@ export default function WeeklyTemplatesStrip({
             />
           </Form.Group>
 
-          <Form.Group className="mb-3">
-            <Form.Label className="form-text-label">Days of week</Form.Label>
-            <div className="template-builder-weekdays">
-              {[
-                { day: 0, label: 'Sun' },
-                { day: 1, label: 'Mon' },
-                { day: 2, label: 'Tue' },
-                { day: 3, label: 'Wed' },
-                { day: 4, label: 'Thu' },
-                { day: 5, label: 'Fri' },
-                { day: 6, label: 'Sat' },
-              ].map(({ day, label }) => (
-                <NonFocusButton
-                  key={day}
-                  className={`template-builder-weekday-pill ${
-                    templateBuilder.weekdays.includes(day) ? 'is-active' : ''
-                  }`}
-                  onClick={() => toggleBuilderWeekday(day)}
-                >
+          <div className="template-builder-grid-shell">
+            <div className="template-builder-grid-header">
+              <div className="template-builder-corner" />
+              {builderWeekdays.map(({ day, label }) => (
+                <div key={day} className="template-builder-day-label">
                   {label}
-                </NonFocusButton>
+                </div>
               ))}
             </div>
-          </Form.Group>
 
-          <div className="template-builder-time-row">
-            <Form.Group>
-              <Form.Label className="form-text-label">Start time</Form.Label>
-              <Form.Control
-                type="time"
-                value={templateBuilder.startTime}
-                onChange={(event) =>
-                  setTemplateBuilder((currentBuilder) => ({
-                    ...currentBuilder,
-                    startTime: event.target.value,
-                  }))
-                }
-              />
-            </Form.Group>
-
-            <Form.Group>
-              <Form.Label className="form-text-label">End time</Form.Label>
-              <Form.Control
-                type="time"
-                value={templateBuilder.endTime}
-                onChange={(event) =>
-                  setTemplateBuilder((currentBuilder) => ({
-                    ...currentBuilder,
-                    endTime: event.target.value,
-                  }))
-                }
-              />
-            </Form.Group>
+            <div className="template-builder-grid-body">
+              {builderHours.map((hour) => (
+                <React.Fragment key={hour}>
+                  <div className="template-builder-time-label">
+                    {to12HourClock(hour)} {hour < 12 ? 'AM' : 'PM'}
+                  </div>
+                  {builderWeekdays.map(({ day }) => (
+                    <React.Fragment key={`${day}-${hour}`}>
+                      {[0, 30].map((minute) => (
+                        <button
+                          key={`${day}-${hour}-${minute}`}
+                          type="button"
+                          className={`template-builder-cell ${
+                            hasBuilderSlot(templateBuilder.slots, day, hour, minute)
+                              ? 'is-active'
+                              : ''
+                          }`}
+                          onClick={() =>
+                            setTemplateBuilder((currentBuilder) => ({
+                              ...currentBuilder,
+                              slots: toggleBuilderSlot(currentBuilder.slots, day, hour, minute),
+                            }))
+                          }
+                          aria-label={`${day}-${hour}-${minute}`}
+                        />
+                      ))}
+                    </React.Fragment>
+                  ))}
+                </React.Fragment>
+              ))}
+            </div>
           </div>
         </Modal.Body>
 
