@@ -187,6 +187,72 @@ function makeTemplateID() {
   return `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function groupTemplateSlotsByWeekday(slots: TemplateSlot[]) {
+  const byDay = new Map<number, TemplateSlot[]>();
+  for (let day = 0; day < 7; day += 1) byDay.set(day, []);
+  for (const slot of slots) byDay.get(slot.weekday)?.push(slot);
+  for (const [day, daySlots] of byDay.entries()) {
+    byDay.set(
+      day,
+      daySlots.slice().sort((a, b) => a.hour - b.hour || a.minute - b.minute)
+    );
+  }
+  return byDay;
+}
+
+function compressDaySlotsToRanges(slots: TemplateSlot[]) {
+  if (slots.length === 0) return [];
+
+  const ranges: Array<{ start: number; end: number }> = [];
+  let rangeStart = slots[0].hour * 60 + slots[0].minute;
+  let prev = rangeStart;
+
+  for (let i = 1; i < slots.length; i += 1) {
+    const current = slots[i].hour * 60 + slots[i].minute;
+    if (current !== prev + 30) {
+      ranges.push({ start: rangeStart, end: prev + 30 });
+      rangeStart = current;
+    }
+    prev = current;
+  }
+
+  ranges.push({ start: rangeStart, end: prev + 30 });
+  return ranges;
+}
+
+function TemplateMiniPreview({ slots }: { slots: TemplateSlot[] }) {
+  const labels = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const byDay = groupTemplateSlotsByWeekday(slots);
+
+  return (
+    <div className="template-mini-preview" aria-hidden="true">
+      {[0, 1, 2, 3, 4, 5, 6].map((day) => {
+        const daySlots = byDay.get(day) ?? [];
+        const ranges = compressDaySlotsToRanges(daySlots);
+
+        return (
+          <div key={day} className="template-mini-day">
+            <div className="template-mini-day-label">{labels[day]}</div>
+            <div className="template-mini-day-track">
+              {ranges.map((range, idx) => {
+                const left = (range.start / 1440) * 100;
+                const width = ((range.end - range.start) / 1440) * 100;
+                return (
+                  <span
+                    key={idx}
+                    className="template-mini-day-bar"
+                    style={{ left: `${left}%`, width: `${width}%` }}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function WeeklyTemplatesStrip({
   allDateStrings,
 }: {
@@ -363,6 +429,7 @@ export default function WeeklyTemplatesStrip({
                   <div className="meeting-template-manage-copy">
                     <div className="meeting-template-manage-name">{template.name}</div>
                     <div className="meeting-template-manage-preview">{template.preview}</div>
+                    <TemplateMiniPreview slots={template.slots} />
                   </div>
 
                   <div className="meeting-template-manage-actions">

@@ -564,3 +564,51 @@
     width: 320px;
   }
 }
+
+/* --- template mini weekly datapad preview --- */
+.template-mini-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-top: 0.45rem;
+}
+
+.template-mini-day {
+  display: grid;
+  grid-template-columns: 14px 1fr;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.template-mini-day-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.58);
+  text-align: center;
+}
+
+.template-mini-day-track {
+  position: relative;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.template-mini-day-bar {
+  position: absolute;
+  top: 1px;
+  bottom: 1px;
+  border-radius: 999px;
+  background: rgba(88, 157, 255, 0.7);
+  box-shadow: 0 0 0 1px rgba(88, 157, 255, 0.15);
+}
+
+.meeting-template-manage-copy {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.meeting-template-manage-actions {
+  align-self: flex-start;
+}
