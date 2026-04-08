@@ -341,11 +341,19 @@ const Cell = React.memo(function Cell({
   const style: Style = {gridArea: `c${cellIdx}`};
   let showRespondentsColour = false;
   if (selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') {
-    if (
-      (isInMouseSelectionArea && mouseSelectionAreaIsAddingDateTimes)
+    const showAvailableSelection = (
+      (isInMouseSelectionArea && mouseSelectionAreaIsAddingDateTimes && selectionKind === 'available')
       || (!isInMouseSelectionArea && isSelected)
-    ) {
+    );
+    const showIfNeededSelection = (
+      (isInMouseSelectionArea && mouseSelectionAreaIsAddingDateTimes && selectionKind === 'ifNeeded')
+      || (!isInMouseSelectionArea && isIfNeededSelected)
+    );
+
+    if (showAvailableSelection) {
       classNames.push('selected');
+    } else if (showIfNeededSelection) {
+      classNames.push('ifneeded-selected');
     }
   } else if (selMode.type === 'editingSchedule') {
     if (isInMouseSelectionColumn || isSelected) {
