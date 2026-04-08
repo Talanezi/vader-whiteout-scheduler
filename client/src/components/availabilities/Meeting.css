@@ -765,3 +765,24 @@
     flex: 1 1 100%;
   }
 }
+
+
+/* --- template library footer visibility fix --- */
+.meeting-template-library-modal .modal-footer {
+  background: rgba(7, 10, 16, 0.98) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+  justify-content: flex-end;
+  padding: 0.85rem 1rem 1rem;
+}
+
+.meeting-template-library-modal .modal-footer .btn {
+  min-width: 110px;
+}
+
+.meeting-template-library-modal .modal-footer .btn-outline-secondary {
+  --bs-btn-color: #f4f4f4;
+  --bs-btn-border-color: rgba(255, 255, 255, 0.24);
+  --bs-btn-hover-color: #0b0b0b;
+  --bs-btn-hover-bg: #ffffff;
+  --bs-btn-hover-border-color: #ffffff;
+}
