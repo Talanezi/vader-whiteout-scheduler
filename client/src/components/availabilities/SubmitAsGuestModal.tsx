@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { useAppDispatch, useAppSelector } from 'app/hooks';
 import ButtonWithSpinner from 'components/ButtonWithSpinner';
 import { useAddGuestRespondentMutation } from 'slices/api';
-import { selectSelectedTimes, resetSelection } from 'slices/availabilitiesSelection';
+import { selectSelectedTimes, selectIfNeededDateTimes, resetSelection } from 'slices/availabilitiesSelection';
 import { selectCurrentMeetingID } from 'slices/currentMeeting';
 import { assert } from 'utils/misc.utils';
 import { getReqErrorMessage } from 'utils/requests.utils';
@@ -19,6 +19,7 @@ function SaveTimesModal({
   const meetingID = useAppSelector(selectCurrentMeetingID);
   assert(meetingID !== undefined);
   const selectedTimes = useAppSelector(selectSelectedTimes);
+  const selectedIfNeededTimes = useAppSelector(selectIfNeededDateTimes);
   const dispatch = useAppDispatch();
   const [addGuest, {isSuccess, isLoading, error, reset}] = useAddGuestRespondentMutation();
   const [name, setName] = useState('');
@@ -53,6 +54,7 @@ function SaveTimesModal({
       id: meetingID,
       addGuestRespondentDto: {
         availabilities: Object.keys(selectedTimes),
+        ifNeededAvailabilities: Object.keys(selectedIfNeededTimes),
         name,
         email: email || undefined,
       },
