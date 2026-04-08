@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 import NonFocusButton from 'components/NonFocusButton';
@@ -316,6 +316,8 @@ export default function WeeklyTemplatesStrip({
   const [templateBuilder, setTemplateBuilder] = useState<TemplateBuilderState>(
     buildTemplateBuilderState()
   );
+  const builderDragModeRef = useRef<'add' | 'remove' | null>(null);
+  const builderDraggedCellsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const loadedTemplates = loadTemplates();
@@ -331,6 +333,12 @@ export default function WeeklyTemplatesStrip({
       saveLastTemplateID(selectedTemplateID);
     }
   }, [selectedTemplateID]);
+
+  useEffect(() => {
+    const handleMouseUp = () => stopBuilderDrag();
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, []);
 
   if (!canUseTemplate) return null;
 
@@ -410,6 +418,61 @@ export default function WeeklyTemplatesStrip({
   ];
 
   const builderHours = Array.from({ length: 16 }, (_, idx) => 8 + idx);
+
+  const toggleBuilderHourBlock = (
+    slots: TemplateSlot[],
+    weekday: number,
+    hour: number,
+    mode?: 'add' | 'remove'
+  ) => {
+    const firstHalfActive = hasBuilderSlot(slots, weekday, hour, 0);
+    const secondHalfActive = hasBuilderSlot(slots, weekday, hour, 30);
+    const isActive = firstHalfActive && secondHalfActive;
+    const targetMode = mode ?? (isActive ? 'remove' : 'add');
+
+    let nextSlots = slots;
+    for (const minute of [0, 30]) {
+      const hasSlot = hasBuilderSlot(nextSlots, weekday, hour, minute);
+      if (targetMode === 'add' && !hasSlot) {
+        nextSlots = toggleBuilderSlot(nextSlots, weekday, hour, minute);
+      }
+      if (targetMode === 'remove' && hasSlot) {
+        nextSlots = toggleBuilderSlot(nextSlots, weekday, hour, minute);
+      }
+    }
+    return nextSlots;
+  };
+
+  const applyBuilderDragCell = (weekday: number, hour: number) => {
+    const cellKey = `${weekday}-${hour}`;
+    if (builderDraggedCellsRef.current.has(cellKey)) return;
+    builderDraggedCellsRef.current.add(cellKey);
+
+    setTemplateBuilder((currentBuilder) => ({
+      ...currentBuilder,
+      slots: toggleBuilderHourBlock(
+        currentBuilder.slots,
+        weekday,
+        hour,
+        builderDragModeRef.current ?? undefined
+      ),
+    }));
+  };
+
+  const startBuilderDrag = (weekday: number, hour: number) => {
+    const isActive =
+      hasBuilderSlot(templateBuilder.slots, weekday, hour, 0) &&
+      hasBuilderSlot(templateBuilder.slots, weekday, hour, 30);
+
+    builderDragModeRef.current = isActive ? 'remove' : 'add';
+    builderDraggedCellsRef.current = new Set();
+    applyBuilderDragCell(weekday, hour);
+  };
+
+  const stopBuilderDrag = () => {
+    builderDragModeRef.current = null;
+    builderDraggedCellsRef.current = new Set();
+  };
 
   const saveTemplateFromBuilder = () => {
     const name = templateBuilder.name.trim();
@@ -671,6 +734,10 @@ export default function WeeklyTemplatesStrip({
           </Form.Group>
 
           <div className="template-builder-grid-shell">
+            <div className="template-builder-grid-note">
+              Drag to paint. Each row covers 1 hour in 30-minute increments.
+            </div>
+
             <div className="template-builder-grid-header">
               <div className="template-builder-corner" />
               {builderWeekdays.map(({ day, label }) => (
@@ -680,34 +747,35 @@ export default function WeeklyTemplatesStrip({
               ))}
             </div>
 
-            <div className="template-builder-grid-body">
+            <div className="template-builder-grid-body template-builder-grid-body-hourly">
               {builderHours.map((hour) => (
                 <React.Fragment key={hour}>
                   <div className="template-builder-time-label">
                     {to12HourClock(hour)} {hour < 12 ? 'AM' : 'PM'}
                   </div>
-                  {builderWeekdays.map(({ day }) => (
-                    <React.Fragment key={`${day}-${hour}`}>
-                      {[0, 30].map((minute) => (
-                        <button
-                          key={`${day}-${hour}-${minute}`}
-                          type="button"
-                          className={`template-builder-cell ${
-                            hasBuilderSlot(templateBuilder.slots, day, hour, minute)
-                              ? 'is-active'
-                              : ''
-                          }`}
-                          onClick={() =>
-                            setTemplateBuilder((currentBuilder) => ({
-                              ...currentBuilder,
-                              slots: toggleBuilderSlot(currentBuilder.slots, day, hour, minute),
-                            }))
+                  {builderWeekdays.map(({ day }) => {
+                    const firstHalfActive = hasBuilderSlot(templateBuilder.slots, day, hour, 0);
+                    const secondHalfActive = hasBuilderSlot(templateBuilder.slots, day, hour, 30);
+                    const isActive = firstHalfActive && secondHalfActive;
+
+                    return (
+                      <button
+                        key={`${day}-${hour}`}
+                        type="button"
+                        className={`template-builder-cell template-builder-cell-hour ${
+                          isActive ? 'is-active' : ''
+                        }`}
+                        onMouseDown={() => startBuilderDrag(day, hour)}
+                        onMouseEnter={() => {
+                          if (builderDragModeRef.current) {
+                            applyBuilderDragCell(day, hour);
                           }
-                          aria-label={`${day}-${hour}-${minute}`}
-                        />
-                      ))}
-                    </React.Fragment>
-                  ))}
+                        }}
+                        onClick={(event) => event.preventDefault()}
+                        aria-label={`${day}-${hour}`}
+                      />
+                    );
+                  })}
                 </React.Fragment>
               ))}
             </div>
