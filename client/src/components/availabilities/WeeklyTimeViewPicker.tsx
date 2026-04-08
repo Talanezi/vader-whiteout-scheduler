@@ -5,6 +5,7 @@ import AvailabilitiesRow from './AvailabilitiesRow';
 import MeetingGridBodyCells from './MeetingGridBodyCells';
 import MeetingRespondents from './MeetingRespondents';
 import WeeklyTemplatesStrip from './WeeklyTemplatesStrip';
+import AvailabilityTypeCard from './AvailabilityTypeCard';
 import { range } from 'utils/arrays.utils';
 import { assert } from 'utils/misc.utils';
 import { useGetCurrentMeetingWithSelector } from 'utils/meetings.hooks';
@@ -165,6 +166,9 @@ export default function WeeklyViewTimePicker() {
           </div>
         </div>
         <div className="vw-respondents-col">
+          {(selModeType === 'addingRespondent' || selModeType === 'editingRespondent') && (
+            <AvailabilityTypeCard />
+          )}
           <MeetingRespondents />
         </div>
       </div>

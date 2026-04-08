@@ -8,8 +8,6 @@ import {
   createSchedule,
   selectSelectedTimes,
   selectIfNeededDateTimes,
-  selectSelectionKind,
-  setSelectionKind,
   addDateTimesAndResetMouse,
   removeDateTimesAndResetMouse,
 } from 'slices/availabilitiesSelection';
@@ -273,7 +271,6 @@ function AvailabilitiesRow({
   const selMode = useAppSelector(selectSelMode);
   const selectedTimes = useAppSelector(selectSelectedTimes);
   const selectedIfNeededTimes = useAppSelector(selectIfNeededDateTimes);
-  const selectionKind = useAppSelector(selectSelectionKind);
   const meetingID = useAppSelector(selectCurrentMeetingID);
   const { respondents, selfRespondentID, scheduledStartDateTime, scheduledEndDateTime, dateMode } = useGetCurrentMeetingWithSelector(
     ({ data: meeting }) => ({
@@ -718,37 +715,6 @@ function AvailabilitiesRow({
         <div style={{ fontSize: '1.3em' }}>{title}</div>
 
         <div className="d-flex align-items-start flex-wrap gap-3 top-controls-row">
-          {(selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') && (
-            <div className="meeting-mode-tools">
-              <div className="meeting-mode-card meeting-mode-card-compact">
-                <div className="meeting-mode-label">Availability type</div>
-                <div className="meeting-mode-help">
-                  Blue means preferred. Yellow means you can make it work if necessary.
-                </div>
-                <div className="meeting-mode-toggle" role="tablist" aria-label="Availability type">
-                  <NonFocusButton
-                    className={`meeting-mode-pill meeting-mode-pill-available ${
-                      selectionKind === 'available' ? 'is-active' : ''
-                    }`}
-                    onClick={() => dispatch(setSelectionKind('available'))}
-                    disabled={btnDisabled}
-                  >
-                    Available
-                  </NonFocusButton>
-                  <NonFocusButton
-                    className={`meeting-mode-pill meeting-mode-pill-ifneeded ${
-                      selectionKind === 'ifNeeded' ? 'is-active' : ''
-                    }`}
-                    onClick={() => dispatch(setSelectionKind('ifNeeded'))}
-                    disabled={btnDisabled}
-                  >
-                    If needed
-                  </NonFocusButton>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div className="d-none d-md-flex">
             {onDeleteBtnClick && (
               <NonFocusButton

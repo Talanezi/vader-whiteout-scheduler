@@ -522,18 +522,27 @@
   }
 }
 
-/* --- desktop spacing tweak: align respondents under availability controls --- */
+/* --- desktop layout: availability type above respondents in right column --- */
 @media (min-width: 768px) {
   .vw-grid-respondents-row {
     align-items: flex-start;
   }
 
   .vw-respondents-col {
-    padding-top: 8.75rem;
     flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+    min-width: 260px;
+  }
+
+  .vw-right-availability-card {
+    max-width: 320px;
+    min-width: 260px;
   }
 
   .respondents-container.vw-respondents-card {
     margin-top: 0;
+    min-width: 260px;
   }
 }
