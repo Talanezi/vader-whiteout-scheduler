@@ -53,10 +53,6 @@
   background-color: rgba(255, 204, 102, 0.58);
 }
 
-.weeklyview__bodycell.ifneeded-aggregate {
-  background-color: rgba(255, 204, 102, 0.34);
-}
-
 .weeklyview__bodycell.scheduling {
   background-color: rgba(var(--custom-scheduled-cell-rgb), 0.78);
 }
@@ -331,8 +327,3 @@
   border: 1px solid rgba(255, 210, 85, 0.28);
 }
 
-.weeklyview__bodycell.ifneeded-mixed {
-  box-shadow:
-    inset 0 -3px 0 rgba(255, 210, 85, 0.6),
-    inset 0 0 0 1px rgba(88, 157, 255, 0.20);
-}

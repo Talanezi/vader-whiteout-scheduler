@@ -374,20 +374,19 @@ const Cell = React.memo(function Cell({
       } else if (hoverUserIsIfNeededAtThisTime) {
         classNames.push('ifneeded-selected');
       }
-    } else if (numPeopleAvailableAtThisTime > 0) {
+    } else if ((numPeopleAvailableAtThisTime + numPeopleIfNeededAtThisTime) > 0) {
       showRespondentsColour = true;
-    } else if (numPeopleIfNeededAtThisTime > 0) {
-      classNames.push('ifneeded-aggregate');
     }
   } else {
     assertIsNever(selMode);
   }
   if (showRespondentsColour) {
-    if (numPeopleIfNeededAtThisTime > 0) {
-      classNames.push('ifneeded-mixed');
-    }
     const rgb = 'var(--custom-primary-rgb)';
-    const alpha = Math.round(100 * (0.2 + 0.8 * (numPeopleAvailableAtThisTime / totalPeople))) + '%';
+    const numPeoplePositiveAtThisTime = Math.min(
+      totalPeople,
+      numPeopleAvailableAtThisTime + numPeopleIfNeededAtThisTime,
+    );
+    const alpha = Math.round(100 * (0.2 + 0.8 * (numPeoplePositiveAtThisTime / totalPeople))) + '%';
     style.backgroundColor = `rgba(${rgb}, ${alpha})`;
   }
 
@@ -450,7 +449,7 @@ const Cell = React.memo(function Cell({
     || selMode.type === 'editingSchedule'
   ) {
     if (mouseStateType === 'upNoCellsSelected') {
-      onMouseDown = () => dispatch(notifyMouseDown({cell: {rowIdx, colIdx}, wasOriginallySelected: isSelected}));
+      onMouseDown = () => dispatch(notifyMouseDown({cell: {rowIdx, colIdx}, wasOriginallySelected: selectionKind === 'available' ? isSelected : isIfNeededSelected}));
     } else if (mouseStateType === 'down') {
       onMouseEnter = () => dispatch(notifyMouseEnter({cell: {rowIdx, colIdx}}));
     }
