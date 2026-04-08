@@ -4,6 +4,7 @@ import { getDateFromString, getDayOfWeekAbbr, getMonthAbbr, getYearMonthDayFromD
 import AvailabilitiesRow from './AvailabilitiesRow';
 import MeetingGridBodyCells from './MeetingGridBodyCells';
 import MeetingRespondents from './MeetingRespondents';
+import WeeklyTemplatesStrip from './WeeklyTemplatesStrip';
 import { range } from 'utils/arrays.utils';
 import { assert } from 'utils/misc.utils';
 import { useGetCurrentMeetingWithSelector } from 'utils/meetings.hooks';
@@ -165,6 +166,8 @@ export default function WeeklyViewTimePicker() {
         </div>
         <MeetingRespondents />
       </div>
+
+      <WeeklyTemplatesStrip allDateStrings={dates} />
     </>
   );
 }

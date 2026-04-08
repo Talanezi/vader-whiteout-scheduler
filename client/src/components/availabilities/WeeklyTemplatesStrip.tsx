@@ -1,0 +1,407 @@
+import React, { useEffect, useState } from 'react';
+import InfoModal from 'components/InfoModal';
+import NonFocusButton from 'components/NonFocusButton';
+import { useToast } from 'components/Toast';
+import { useAppDispatch, useAppSelector } from 'app/hooks';
+import {
+  addDateTimesAndResetMouse,
+  removeDateTimesAndResetMouse,
+  selectSelectedTimes,
+  selectSelMode,
+} from 'slices/availabilitiesSelection';
+import {
+  customToISOString,
+  getDateFromString,
+  to12HourClock,
+} from 'utils/dates.utils';
+
+const TEMPLATE_KEY = 'vw_availability_templates_v2';
+const LAST_TEMPLATE_KEY = 'vw_last_availability_template_v2';
+
+type TemplateSlot = {
+  weekday: number;
+  hour: number;
+  minute: number;
+};
+
+type SavedTemplate = {
+  id: string;
+  name: string;
+  slots: TemplateSlot[];
+  preview: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+function loadTemplates(): SavedTemplate[] {
+  try {
+    const raw = localStorage.getItem(TEMPLATE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveTemplates(templates: SavedTemplate[]) {
+  localStorage.setItem(TEMPLATE_KEY, JSON.stringify(templates));
+}
+
+function loadLastTemplateID(): string {
+  try {
+    return localStorage.getItem(LAST_TEMPLATE_KEY) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function saveLastTemplateID(id: string) {
+  localStorage.setItem(LAST_TEMPLATE_KEY, id);
+}
+
+function dedupeTemplateSlots(dateTimes: string[]): TemplateSlot[] {
+  return dateTimes
+    .map((dateTime) => {
+      const d = new Date(dateTime);
+      return {
+        weekday: d.getDay(),
+        hour: d.getHours(),
+        minute: d.getMinutes(),
+      };
+    })
+    .filter(
+      (slot, idx, arr) =>
+        arr.findIndex(
+          (other) =>
+            other.weekday === slot.weekday &&
+            other.hour === slot.hour &&
+            other.minute === slot.minute
+        ) === idx
+    )
+    .sort(
+      (a, b) =>
+        a.weekday - b.weekday ||
+        a.hour - b.hour ||
+        a.minute - b.minute
+    );
+}
+
+function buildDateTimesFromTemplate(slots: TemplateSlot[], allDateStrings: string[]) {
+  const result: string[] = [];
+  for (const dateString of allDateStrings) {
+    const weekday = getDateFromString(dateString).getDay();
+    for (const slot of slots) {
+      if (slot.weekday === weekday) {
+        result.push(customToISOString(dateString, slot.hour, slot.minute));
+      }
+    }
+  }
+  return result;
+}
+
+function formatTemplateTimeRange(slots: TemplateSlot[]): string | null {
+  if (slots.length === 0) return null;
+
+  const sorted = [...slots].sort(
+    (a, b) => a.hour - b.hour || a.minute - b.minute
+  );
+
+  for (let i = 1; i < sorted.length; i += 1) {
+    const prev = sorted[i - 1];
+    const current = sorted[i];
+    const prevMinutes = prev.hour * 60 + prev.minute;
+    const currentMinutes = current.hour * 60 + current.minute;
+    if (currentMinutes - prevMinutes !== 30) return null;
+  }
+
+  const start = sorted[0];
+  const last = sorted[sorted.length - 1];
+  const endDate = new Date(2000, 0, 1, last.hour, last.minute + 30);
+
+  return `${to12HourClock(start.hour)} ${start.hour < 12 ? 'AM' : 'PM'}–${to12HourClock(endDate.getHours())} ${endDate.getHours() < 12 ? 'AM' : 'PM'}`;
+}
+
+function summarizeTemplateSlots(slots: TemplateSlot[]): string {
+  if (slots.length === 0) return 'No saved time blocks';
+
+  const byWeekday = new Map<number, TemplateSlot[]>();
+  for (const slot of slots) {
+    const existing = byWeekday.get(slot.weekday) ?? [];
+    existing.push(slot);
+    byWeekday.set(slot.weekday, existing);
+  }
+
+  const weekdays = [...byWeekday.keys()].sort((a, b) => a - b);
+  const weekdayLabelMap = new Map<number, string>([
+    [0, 'Sun'],
+    [1, 'Mon'],
+    [2, 'Tue'],
+    [3, 'Wed'],
+    [4, 'Thu'],
+    [5, 'Fri'],
+    [6, 'Sat'],
+  ]);
+
+  if (weekdays.join(',') === '0,6') {
+    const weekendSlots = [...(byWeekday.get(0) ?? []), ...(byWeekday.get(6) ?? [])];
+    const uniqueWeekendSlots = weekendSlots.filter(
+      (slot, idx, arr) =>
+        arr.findIndex(
+          (other) => other.hour === slot.hour && other.minute === slot.minute
+        ) === idx
+    );
+    const range = formatTemplateTimeRange(uniqueWeekendSlots);
+    return range ? `Weekends only · ${range}` : 'Weekends only';
+  }
+
+  const groupLabel =
+    weekdays.length === 1
+      ? weekdayLabelMap.get(weekdays[0]) ?? 'Saved'
+      : weekdays.every((weekday, idx) => idx === 0 || weekday === weekdays[idx - 1] + 1)
+      ? `${weekdayLabelMap.get(weekdays[0])}–${weekdayLabelMap.get(weekdays[weekdays.length - 1])}`
+      : weekdays.map((weekday) => weekdayLabelMap.get(weekday) ?? '').join(', ');
+
+  const firstDaySlots = byWeekday.get(weekdays[0]) ?? [];
+  const sameSlotsEveryDay = weekdays.every((weekday) => {
+    const daySlots = (byWeekday.get(weekday) ?? [])
+      .slice()
+      .sort((a, b) => a.hour - b.hour || a.minute - b.minute)
+      .map((slot) => `${slot.hour}:${slot.minute}`);
+    const baseSlots = firstDaySlots
+      .slice()
+      .sort((a, b) => a.hour - b.hour || a.minute - b.minute)
+      .map((slot) => `${slot.hour}:${slot.minute}`);
+    return JSON.stringify(daySlots) === JSON.stringify(baseSlots);
+  });
+
+  if (sameSlotsEveryDay) {
+    const range = formatTemplateTimeRange(firstDaySlots);
+    if (range) return `${groupLabel} · ${range}`;
+  }
+
+  return `${slots.length} saved time blocks`;
+}
+
+function makeTemplateID() {
+  return `tpl_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+export default function WeeklyTemplatesStrip({
+  allDateStrings,
+}: {
+  allDateStrings: string[];
+}) {
+  const dispatch = useAppDispatch();
+  const { showToast } = useToast();
+  const selModeType = useAppSelector((state) => selectSelMode(state).type);
+  const selectedTimes = useAppSelector(selectSelectedTimes);
+  const canUseTemplate =
+    selModeType === 'addingRespondent' || selModeType === 'editingRespondent';
+
+  const [templates, setTemplates] = useState<SavedTemplate[]>([]);
+  const [selectedTemplateID, setSelectedTemplateID] = useState('');
+  const [showManageTemplatesModal, setShowManageTemplatesModal] = useState(false);
+
+  useEffect(() => {
+    const loadedTemplates = loadTemplates();
+    const lastTemplateID = loadLastTemplateID();
+    setTemplates(loadedTemplates);
+    if (lastTemplateID && loadedTemplates.some((template) => template.id === lastTemplateID)) {
+      setSelectedTemplateID(lastTemplateID);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (selectedTemplateID) {
+      saveLastTemplateID(selectedTemplateID);
+    }
+  }, [selectedTemplateID]);
+
+  if (!canUseTemplate) return null;
+
+  const selectedTemplate =
+    templates.find((template) => template.id === selectedTemplateID) ?? null;
+
+  const persistTemplates = (nextTemplates: SavedTemplate[]) => {
+    setTemplates(nextTemplates);
+    saveTemplates(nextTemplates);
+  };
+
+  const onSaveTemplate = () => {
+    const current = Object.keys(selectedTimes);
+    if (current.length === 0) {
+      showToast({
+        msg: 'Select at least one availability block first',
+        msgType: 'success',
+        autoClose: true,
+      });
+      return;
+    }
+
+    const name = window.prompt('Template name');
+    if (!name?.trim()) return;
+
+    const slots = dedupeTemplateSlots(current);
+    const now = new Date().toISOString();
+    const template: SavedTemplate = {
+      id: makeTemplateID(),
+      name: name.trim(),
+      slots,
+      preview: summarizeTemplateSlots(slots),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    const nextTemplates = [...templates, template];
+    persistTemplates(nextTemplates);
+    setSelectedTemplateID(template.id);
+
+    showToast({
+      msg: 'Saved current availability as a template',
+      msgType: 'success',
+      autoClose: true,
+    });
+  };
+
+  const onApplyTemplate = () => {
+    if (!selectedTemplate) return;
+
+    const current = Object.keys(selectedTimes);
+    const next = buildDateTimesFromTemplate(selectedTemplate.slots, allDateStrings);
+
+    if (current.length > 0) dispatch(removeDateTimesAndResetMouse(current));
+    if (next.length > 0) dispatch(addDateTimesAndResetMouse(next));
+
+    showToast({
+      msg: `Applied template "${selectedTemplate.name}"`,
+      msgType: 'success',
+      autoClose: true,
+    });
+  };
+
+  return (
+    <>
+      <div className="meeting-template-strip meeting-template-strip-below-grid">
+        <div className="meeting-template-strip-copy">
+          <div className="meeting-template-label">Weekly templates</div>
+          <div className="meeting-template-help">
+            Apply a saved weekly pattern, save the current selection, or create one from scratch.
+          </div>
+        </div>
+
+        <div className="meeting-template-strip-controls">
+          <select
+            className="form-select meeting-template-select"
+            value={selectedTemplateID}
+            onChange={(event) => setSelectedTemplateID(event.target.value)}
+            disabled={templates.length === 0}
+          >
+            <option value="">Choose a template</option>
+            {templates.map((template) => (
+              <option key={template.id} value={template.id}>
+                {template.name}
+              </option>
+            ))}
+          </select>
+
+          <div className="meeting-template-preview">
+            {selectedTemplate
+              ? selectedTemplate.preview
+              : templates.length === 0
+              ? 'No saved templates yet. Save your current schedule to create one.'
+              : 'No template selected'}
+          </div>
+
+          <div className="meeting-template-actions meeting-template-actions-inline">
+            <NonFocusButton
+              className="btn btn-primary meeting-avl-button"
+              onClick={onApplyTemplate}
+              disabled={!selectedTemplate}
+            >
+              Apply
+            </NonFocusButton>
+            <NonFocusButton
+              className="btn btn-outline-secondary meeting-avl-button"
+              onClick={onSaveTemplate}
+            >
+              Save current
+            </NonFocusButton>
+            <NonFocusButton
+              className="btn btn-outline-secondary meeting-avl-button"
+              onClick={() =>
+                showToast({
+                  msg: 'Weekly template builder is next',
+                  msgType: 'success',
+                  autoClose: true,
+                })
+              }
+            >
+              New weekly template
+            </NonFocusButton>
+            <NonFocusButton
+              className="btn btn-outline-secondary meeting-avl-button"
+              onClick={() => setShowManageTemplatesModal(true)}
+              disabled={templates.length === 0}
+            >
+              Library
+            </NonFocusButton>
+          </div>
+        </div>
+      </div>
+
+      <InfoModal show={showManageTemplatesModal} setShow={setShowManageTemplatesModal}>
+        <div className="meeting-template-manage">
+          <div className="meeting-template-manage-title">Manage templates</div>
+
+          {templates.length === 0 ? (
+            <p className="mb-0 text-center">No saved templates yet.</p>
+          ) : (
+            <div className="meeting-template-manage-list">
+              {templates.map((template) => (
+                <div key={template.id} className="meeting-template-manage-item">
+                  <div className="meeting-template-manage-copy">
+                    <div className="meeting-template-manage-name">{template.name}</div>
+                    <div className="meeting-template-manage-preview">{template.preview}</div>
+                  </div>
+
+                  <div className="meeting-template-manage-actions">
+                    <NonFocusButton
+                      className="btn btn-outline-secondary btn-sm"
+                      onClick={() => {
+                        const nextName = window.prompt('Rename template', template.name);
+                        if (!nextName?.trim()) return;
+                        persistTemplates(
+                          templates.map((item) =>
+                            item.id === template.id
+                              ? { ...item, name: nextName.trim(), updatedAt: new Date().toISOString() }
+                              : item
+                          )
+                        );
+                      }}
+                    >
+                      Rename
+                    </NonFocusButton>
+                    <NonFocusButton
+                      className="btn btn-outline-danger btn-sm"
+                      onClick={() => {
+                        if (!window.confirm(`Delete template "${template.name}"?`)) return;
+                        const nextTemplates = templates.filter((item) => item.id !== template.id);
+                        persistTemplates(nextTemplates);
+                        if (selectedTemplateID === template.id) {
+                          setSelectedTemplateID(nextTemplates[0]?.id ?? '');
+                        }
+                      }}
+                    >
+                      Delete
+                    </NonFocusButton>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </InfoModal>
+    </>
+  );
+}
