@@ -327,3 +327,12 @@
   border: 1px solid rgba(255, 210, 85, 0.28);
 }
 
+
+.vw-respondent-item.unavailable {
+  text-decoration: line-through;
+  opacity: 0.42;
+}
+
+.vw-respondent-item.unavailable .vw-respondent-name {
+  opacity: 0.72;
+}
