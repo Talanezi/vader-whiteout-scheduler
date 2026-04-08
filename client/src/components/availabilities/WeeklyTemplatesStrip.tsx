@@ -734,10 +734,6 @@ export default function WeeklyTemplatesStrip({
           </Form.Group>
 
           <div className="template-builder-grid-shell">
-            <div className="template-builder-grid-note">
-              Drag to paint. Each row covers 1 hour in 30-minute increments.
-            </div>
-
             <div className="template-builder-grid-header">
               <div className="template-builder-corner" />
               {builderWeekdays.map(({ day, label }) => (
@@ -756,24 +752,36 @@ export default function WeeklyTemplatesStrip({
                   {builderWeekdays.map(({ day }) => {
                     const firstHalfActive = hasBuilderSlot(templateBuilder.slots, day, hour, 0);
                     const secondHalfActive = hasBuilderSlot(templateBuilder.slots, day, hour, 30);
-                    const isActive = firstHalfActive && secondHalfActive;
 
                     return (
-                      <button
-                        key={`${day}-${hour}`}
-                        type="button"
-                        className={`template-builder-cell template-builder-cell-hour ${
-                          isActive ? 'is-active' : ''
-                        }`}
-                        onMouseDown={() => startBuilderDrag(day, hour)}
-                        onMouseEnter={() => {
-                          if (builderDragModeRef.current) {
-                            applyBuilderDragCell(day, hour);
+                      <div key={`${day}-${hour}`} className="template-builder-hour-cell">
+                        <button
+                          type="button"
+                          className={`template-builder-cell template-builder-cell-half template-builder-cell-half-top ${
+                            firstHalfActive ? 'is-active' : ''
+                          }`}
+                          onClick={() =>
+                            setTemplateBuilder((currentBuilder) => ({
+                              ...currentBuilder,
+                              slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 0),
+                            }))
                           }
-                        }}
-                        onClick={(event) => event.preventDefault()}
-                        aria-label={`${day}-${hour}`}
-                      />
+                          aria-label={`${day}-${hour}-00`}
+                        />
+                        <button
+                          type="button"
+                          className={`template-builder-cell template-builder-cell-half template-builder-cell-half-bottom ${
+                            secondHalfActive ? 'is-active' : ''
+                          }`}
+                          onClick={() =>
+                            setTemplateBuilder((currentBuilder) => ({
+                              ...currentBuilder,
+                              slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 30),
+                            }))
+                          }
+                          aria-label={`${day}-${hour}-30`}
+                        />
+                      </div>
                     );
                   })}
                 </React.Fragment>
