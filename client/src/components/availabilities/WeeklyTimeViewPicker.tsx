@@ -137,7 +137,7 @@ export default function WeeklyViewTimePicker() {
   return (
     <>
       <AvailabilitiesRow {...{moreDaysToRight, pageDispatch, allDateStrings: dates}} />
-      <div className="d-md-flex mt-3 mt-md-5">
+      <div className="d-md-flex mt-3 mt-md-5 vw-grid-respondents-row">
         <div className="flex-md-grow-1">
           <div
             style={{
@@ -164,7 +164,9 @@ export default function WeeklyViewTimePicker() {
             Shown in local time ({tzAbbr})
           </div>
         </div>
-        <MeetingRespondents />
+        <div className="vw-respondents-col">
+          <MeetingRespondents />
+        </div>
       </div>
 
       <WeeklyTemplatesStrip allDateStrings={dates} />

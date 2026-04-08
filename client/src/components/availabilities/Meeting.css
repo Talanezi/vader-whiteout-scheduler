@@ -522,9 +522,18 @@
   }
 }
 
-/* --- desktop spacing tweak: push respondents lower under availability controls --- */
+/* --- desktop spacing tweak: align respondents under availability controls --- */
 @media (min-width: 768px) {
+  .vw-grid-respondents-row {
+    align-items: flex-start;
+  }
+
+  .vw-respondents-col {
+    padding-top: 4.75rem;
+    flex: 0 0 auto;
+  }
+
   .respondents-container.vw-respondents-card {
-    margin-top: 7.25rem;
+    margin-top: 0;
   }
 }
