@@ -413,9 +413,14 @@ export default function WeeklyTemplatesStrip({
       >
         <Modal.Header closeButton className="border-bottom-0 pb-2">
           <div className="meeting-template-library-header">
-            <Modal.Title>Manage templates</Modal.Title>
+            <div className="meeting-template-library-header-copy">
+              <Modal.Title>Template Library</Modal.Title>
+              <div className="meeting-template-library-subtitle">
+                Reuse, review, and manage your weekly patterns.
+              </div>
+            </div>
             <NonFocusButton
-              className="btn btn-outline-primary btn-sm"
+              className="btn btn-primary btn-sm meeting-template-library-add-btn"
               onClick={() =>
                 showToast({
                   msg: 'Weekly template builder is next',
@@ -444,6 +449,26 @@ export default function WeeklyTemplatesStrip({
                     </div>
 
                     <div className="meeting-template-manage-actions">
+                      <NonFocusButton
+                        className="btn btn-primary btn-sm"
+                        onClick={() => {
+                          setSelectedTemplateID(template.id);
+                          const current = Object.keys(selectedTimes);
+                          const next = buildDateTimesFromTemplate(template.slots, allDateStrings);
+
+                          if (current.length > 0) dispatch(removeDateTimesAndResetMouse(current));
+                          if (next.length > 0) dispatch(addDateTimesAndResetMouse(next));
+
+                          showToast({
+                            msg: `Applied template "${template.name}"`,
+                            msgType: 'success',
+                            autoClose: true,
+                          });
+                          setShowManageTemplatesModal(false);
+                        }}
+                      >
+                        Apply
+                      </NonFocusButton>
                       <NonFocusButton
                         className="btn btn-outline-secondary btn-sm"
                         onClick={() => {
@@ -481,14 +506,7 @@ export default function WeeklyTemplatesStrip({
           </div>
         </Modal.Body>
 
-        <Modal.Footer className="border-top-0 pt-2">
-          <NonFocusButton
-            className="btn btn-outline-secondary custom-btn-min-width"
-            onClick={() => setShowManageTemplatesModal(false)}
-          >
-            Done
-          </NonFocusButton>
-        </Modal.Footer>
+
       </Modal>
     </>
   );
