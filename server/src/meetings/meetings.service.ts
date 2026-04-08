@@ -331,18 +331,21 @@ CabbageMeet | ${this.publicURL}
     });
   }
 
+
   async addRespondent({
     meetingSlug,
     availabilities,
+    ifNeededAvailabilities = [],
     user,
     guestName,
     guestEmail,
   }: {
-    meetingSlug: string;
-    availabilities: string[];
-    user?: User;
-    guestName?: string;
-    guestEmail?: string;
+    meetingSlug: string,
+    availabilities: string[],
+    ifNeededAvailabilities?: string[],
+    user?: User,
+    guestName?: string,
+    guestEmail?: string,
   }): Promise<Meeting> {
     // TODO: use transaction
     const meeting = await this.getMeetingWithRespondentsBySlug(meetingSlug);
@@ -353,6 +356,7 @@ CabbageMeet | ${this.publicURL}
       Meeting: meeting,
       MeetingID: meeting.ID,
       Availabilities: availabilities,
+      IfNeededAvailabilities: ifNeededAvailabilities ?? [],
     };
     if (user) {
       respondent.User = user;
@@ -370,10 +374,12 @@ CabbageMeet | ${this.publicURL}
     return meeting;
   }
 
+
   async updateRespondent(
     respondentID: number,
     meetingSlug: string,
     availabilities: string[],
+    ifNeededAvailabilities: string[] = [],
   ): Promise<Meeting> {
     // TODO: wrap in transaction
     const meeting = await this.getMeetingWithRespondentsBySlug(meetingSlug);
@@ -387,6 +393,7 @@ CabbageMeet | ${this.publicURL}
       },
       {
         Availabilities: availabilities,
+        IfNeededAvailabilities: ifNeededAvailabilities ?? [],
       },
     );
     if (result.affected === 0) {
@@ -395,16 +402,19 @@ CabbageMeet | ${this.publicURL}
     for (const respondent of meeting.Respondents) {
       if (respondent.RespondentID === respondentID) {
         respondent.Availabilities = availabilities;
+        respondent.IfNeededAvailabilities = ifNeededAvailabilities;
         break;
       }
     }
     return meeting;
   }
 
+
   async addOrUpdateRespondent(
     meetingSlug: string,
     user: User,
     availabilities: string[],
+    ifNeededAvailabilities: string[] = [],
   ): Promise<Meeting> {
     const existingRespondent = await this.getRespondentByMeetingAndUserID(
       meetingSlug,
@@ -416,11 +426,13 @@ CabbageMeet | ${this.publicURL}
         existingRespondent.RespondentID,
         meetingSlug,
         availabilities,
+        ifNeededAvailabilities,
       );
     } else {
       updatedMeeting = await this.addRespondent({
         meetingSlug,
         availabilities,
+        ifNeededAvailabilities,
         user,
       });
     }

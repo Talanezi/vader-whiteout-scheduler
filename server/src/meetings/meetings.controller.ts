@@ -476,6 +476,7 @@ export class MeetingsController {
       const updatedMeeting = await this.meetingsService.addRespondent({
         meetingSlug,
         availabilities: body.availabilities,
+        ifNeededAvailabilities: body.ifNeededAvailabilities ?? [],
         guestName: body.name,
         guestEmail: body.email,
       });
@@ -505,6 +506,7 @@ export class MeetingsController {
         meetingSlug,
         user,
         body.availabilities,
+        body.ifNeededAvailabilities ?? [],
       );
       return meetingToMeetingResponse(updatedMeeting, user);
     } catch (err) {
@@ -537,6 +539,7 @@ export class MeetingsController {
         respondentID,
         meetingSlug,
         body.availabilities,
+        body.ifNeededAvailabilities ?? [],
       );
       return meetingToMeetingResponse(updatedMeeting, maybeUser);
     } catch (err) {

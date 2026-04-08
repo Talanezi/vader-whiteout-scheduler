@@ -52,6 +52,9 @@ export default class MeetingRespondent {
   @Column({ type: 'simple-json' })
   Availabilities: string[];
 
+  @Column({ type: 'simple-json', nullable: true })
+  IfNeededAvailabilities: string[];
+
   @OneToMany(
     () => GoogleCalendarCreatedEvent,
     (googleEvent) => googleEvent.MeetingRespondent,
