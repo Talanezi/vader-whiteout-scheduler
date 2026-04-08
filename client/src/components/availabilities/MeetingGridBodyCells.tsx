@@ -86,14 +86,52 @@ function useMouseupListener(dateTimes: string[][]) {
   const selMode = useAppSelector(selectSelMode);
   const mouseState = useAppSelector(selectMouseState);
 
-  // The mouseup listener needs to be attached to the whole document
+  // The mouseup/touchend listeners need to be attached to the whole document
   // because we need to dispatch the 'up' action no matter where the
   // event occurs
   useEffect(() => {
-    const listener = () => dispatch(notifyMouseUp());
-    document.addEventListener('mouseup', listener);
-    return () => document.removeEventListener('mouseup', listener);
-  }, [dispatch]);
+    const handleMouseUp = () => dispatch(notifyMouseUp());
+    const handleTouchEnd = () => dispatch(notifyMouseUp());
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (mouseState?.type !== 'down') return;
+      if (
+        selMode.type !== 'addingRespondent'
+        && selMode.type !== 'editingRespondent'
+        && selMode.type !== 'editingSchedule'
+      ) {
+        return;
+      }
+
+      const touch = event.touches[0];
+      if (!touch) return;
+
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const cellEl = el instanceof Element
+        ? el.closest('[data-grid-cell="true"]')
+        : null;
+      if (!(cellEl instanceof HTMLElement)) return;
+
+      const rowIdx = Number(cellEl.dataset.rowIdx);
+      const colIdx = Number(cellEl.dataset.colIdx);
+      if (Number.isNaN(rowIdx) || Number.isNaN(colIdx)) return;
+
+      event.preventDefault();
+      dispatch(notifyMouseEnter({ cell: { rowIdx, colIdx } }));
+    };
+
+    document.addEventListener('mouseup', handleMouseUp);
+    document.addEventListener('touchend', handleTouchEnd);
+    document.addEventListener('touchcancel', handleTouchEnd);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchend', handleTouchEnd);
+      document.removeEventListener('touchcancel', handleTouchEnd);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, [dispatch, mouseState?.type, selMode.type]);
 
   useEffect(() => {
     if (mouseState?.type !== 'upCellsSelected') {
@@ -443,28 +481,44 @@ const Cell = React.memo(function Cell({
   let onMouseEnter: React.MouseEventHandler | undefined;
   let onMouseLeave: React.MouseEventHandler | undefined;
   let onMouseDown: React.MouseEventHandler | undefined;
+  let onTouchStart: React.TouchEventHandler | undefined;
   if (
     selMode.type === 'addingRespondent'
     || selMode.type === 'editingRespondent'
     || selMode.type === 'editingSchedule'
   ) {
     if (mouseStateType === 'upNoCellsSelected') {
-      onMouseDown = () => dispatch(notifyMouseDown({cell: {rowIdx, colIdx}, wasOriginallySelected: selectionKind === 'available' ? isSelected : isIfNeededSelected}));
+      const startSelection = () => dispatch(notifyMouseDown({cell: {rowIdx, colIdx}, wasOriginallySelected: selectionKind === 'available' ? isSelected : isIfNeededSelected}));
+      onMouseDown = startSelection;
+      onTouchStart = (event) => {
+        event.preventDefault();
+        startSelection();
+      };
     } else if (mouseStateType === 'down') {
       onMouseEnter = () => dispatch(notifyMouseEnter({cell: {rowIdx, colIdx}}));
     }
   } else if (selMode.type === 'selectedUser') {
-    onMouseDown = () => showToast({
+    const showEditToast = () => showToast({
       msg: `Click the 'Edit availability' button`,
       msgType: 'success',
       autoClose: true,
     });
+    onMouseDown = showEditToast;
+    onTouchStart = (event) => {
+      event.preventDefault();
+      showEditToast();
+    };
   } else if (selMode.type === 'none') {
-    onMouseDown = () => showToast({
+    const showAddToast = () => showToast({
       msg: "Click the 'Add availability' button",
       msgType: 'success',
       autoClose: true,
     });
+    onMouseDown = showAddToast;
+    onTouchStart = (event) => {
+      event.preventDefault();
+      showAddToast();
+    };
     onMouseEnter = () => dispatch(setHoverDateTime(dateTime));
     // TODO: it's inefficient to have onMouseLeave on each cell - maybe we can
     // create a parent component around the Cell components and place it there?
@@ -474,9 +528,13 @@ const Cell = React.memo(function Cell({
     <div
       className={classNames.join(' ')}
       style={style}
+      data-grid-cell="true"
+      data-row-idx={rowIdx}
+      data-col-idx={colIdx}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
       onMouseDown={onMouseDown}
+      onTouchStart={onTouchStart}
     >
       {/* at most one of these will be shown */}
       {scheduledTimeBox}
