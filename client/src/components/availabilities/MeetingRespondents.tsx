@@ -17,6 +17,19 @@ type DateTimePeopleSet = {
   };
 };
 
+function buildDateTimePeopleSet(
+  respondents: Record<string, { [dateTime: string]: boolean }>
+): DateTimePeopleSet {
+  const result: DateTimePeopleSet = {};
+  for (const [respondentID, dateTimes] of Object.entries(respondents)) {
+    for (const dateTime of Object.keys(dateTimes || {})) {
+      if (!result[dateTime]) result[dateTime] = {};
+      result[dateTime][respondentID] = true;
+    }
+  }
+  return result;
+}
+
 function MeetingRespondents() {
   const { respondents } = useGetCurrentMeetingWithSelector(({ data: meeting }) => ({
     respondents: meeting?.respondents,
@@ -26,16 +39,19 @@ function MeetingRespondents() {
   const respondentIDs = Object.keys(respondents).map(s => +s);
 
   const dateTimePeople: DateTimePeopleSet = useMemo(() => {
-    const result: DateTimePeopleSet = {};
+    const source: Record<string, { [dateTime: string]: boolean }> = {};
     for (const [respondentID, respondent] of Object.entries(respondents)) {
-      for (const dateTime of Object.keys(respondent.availabilities)) {
-        if (!result[dateTime]) {
-          result[dateTime] = {};
-        }
-        result[dateTime][respondentID] = true;
-      }
+      source[respondentID] = respondent.availabilities;
     }
-    return result;
+    return buildDateTimePeopleSet(source);
+  }, [respondents]);
+
+  const dateTimePeopleIfNeeded: DateTimePeopleSet = useMemo(() => {
+    const source: Record<string, { [dateTime: string]: boolean }> = {};
+    for (const [respondentID, respondent] of Object.entries(respondents)) {
+      source[respondentID] = respondent.ifNeededAvailabilities;
+    }
+    return buildDateTimePeopleSet(source);
   }, [respondents]);
 
   const selMode = useAppSelector(selectSelMode);
@@ -52,8 +68,11 @@ function MeetingRespondents() {
   }
 
   const numPeopleForHover =
-    hoverDateTime !== null && dateTimePeople[hoverDateTime]
-      ? Object.keys(dateTimePeople[hoverDateTime]).length
+    hoverDateTime !== null
+      ? respondentIDs.filter((respondentID) => (
+          !!dateTimePeople[hoverDateTime]?.[respondentID]
+          || !!dateTimePeopleIfNeeded[hoverDateTime]?.[respondentID]
+        )).length
       : 0;
 
   return (
@@ -68,16 +87,30 @@ function MeetingRespondents() {
             style.color = 'var(--custom-primary)';
           }
 
+          const availableAtHover =
+            hoverDateTime !== null && !!dateTimePeople[hoverDateTime]?.[respondentID];
+          const ifNeededAtHover =
+            hoverDateTime !== null && !!dateTimePeopleIfNeeded[hoverDateTime]?.[respondentID];
+
           let className = 'vw-respondent-item';
           if (
             selectedRespondentID === undefined &&
             hoverDateTime !== null &&
-            !(dateTimePeople[hoverDateTime] && dateTimePeople[hoverDateTime][respondentID])
+            !availableAtHover &&
+            !ifNeededAtHover
           ) {
             className += ' unavailable';
           }
           if (respondentID === selectedRespondentID) {
             className += ' active';
+          }
+          if (
+            selectedRespondentID === undefined &&
+            hoverDateTime !== null &&
+            !availableAtHover &&
+            ifNeededAtHover
+          ) {
+            className += ' ifneeded';
           }
 
           let onClick: React.MouseEventHandler | undefined;
@@ -103,7 +136,10 @@ function MeetingRespondents() {
               onMouseLeave={onMouseLeave}
               onClick={onClick}
             >
-              <span>{respondents[respondentID].name}</span>
+              <span className="vw-respondent-name">{respondents[respondentID].name}</span>
+              {selectedRespondentID === undefined && hoverDateTime !== null && !availableAtHover && ifNeededAtHover && (
+                <span className="vw-respondent-badge">If needed</span>
+              )}
             </li>
           );
         })}

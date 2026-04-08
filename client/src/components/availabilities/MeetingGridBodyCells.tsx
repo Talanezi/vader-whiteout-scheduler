@@ -383,6 +383,9 @@ const Cell = React.memo(function Cell({
     assertIsNever(selMode);
   }
   if (showRespondentsColour) {
+    if (numPeopleIfNeededAtThisTime > 0) {
+      classNames.push('ifneeded-mixed');
+    }
     const rgb = 'var(--custom-primary-rgb)';
     const alpha = Math.round(100 * (0.2 + 0.8 * (numPeopleAvailableAtThisTime / totalPeople))) + '%';
     style.backgroundColor = `rgba(${rgb}, ${alpha})`;
