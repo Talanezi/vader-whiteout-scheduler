@@ -717,10 +717,10 @@ function AvailabilitiesRow({
       <div className="d-flex align-items-center justify-content-between flex-wrap gap-3">
         <div style={{ fontSize: '1.3em' }}>{title}</div>
 
-        <div className="d-flex align-items-center flex-wrap gap-3">
+        <div className="d-flex align-items-start flex-wrap gap-3 top-controls-row">
           {(selMode.type === 'addingRespondent' || selMode.type === 'editingRespondent') && (
             <div className="meeting-mode-tools">
-              <div className="meeting-mode-card">
+              <div className="meeting-mode-card meeting-mode-card-compact">
                 <div className="meeting-mode-label">Availability type</div>
                 <div className="meeting-mode-help">
                   Blue means preferred. Yellow means you can make it work if necessary.
@@ -746,63 +746,6 @@ function AvailabilitiesRow({
                   </NonFocusButton>
                 </div>
               </div>
-
-              {canUseTemplate && (
-                <div className="meeting-template-card">
-                  <div className="meeting-template-label">Templates</div>
-                  <div className="meeting-template-help">
-                    Apply a saved weekly pattern or save your current one.
-                  </div>
-
-                  <div className="meeting-template-body">
-                    <select
-                      className="form-select meeting-template-select"
-                      value={selectedTemplateID}
-                      onChange={onTemplateSelectChange}
-                      disabled={btnDisabled || templates.length === 0}
-                    >
-                      <option value="">Choose a template</option>
-                      {templates.map((template) => (
-                        <option key={template.id} value={template.id}>
-                          {template.name}
-                        </option>
-                      ))}
-                    </select>
-
-                    <div className="meeting-template-preview">
-                      {selectedTemplate
-                        ? selectedTemplate.preview
-                        : templates.length === 0
-                        ? 'No saved templates yet. Save your current schedule to create one.'
-                        : 'No template selected'}
-                    </div>
-
-                    <div className="meeting-template-actions">
-                      <NonFocusButton
-                        className="btn btn-primary meeting-avl-button"
-                        onClick={onApplyTemplate}
-                        disabled={btnDisabled || !selectedTemplate}
-                      >
-                        Apply
-                      </NonFocusButton>
-                      <NonFocusButton
-                        className="btn btn-outline-secondary meeting-avl-button"
-                        onClick={onSaveTemplate}
-                        disabled={btnDisabled}
-                      >
-                        Save current
-                      </NonFocusButton>
-                      <NonFocusButton
-                        className="btn btn-outline-secondary meeting-avl-button"
-                        onClick={() => setShowManageTemplatesModal(true)}
-                        disabled={btnDisabled || templates.length === 0}
-                      >
-                        Manage
-                      </NonFocusButton>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           )}
 
@@ -841,6 +784,78 @@ function AvailabilitiesRow({
           </div>
         </div>
       </div>
+
+      {canUseTemplate && (
+        <div className="meeting-template-strip">
+          <div className="meeting-template-strip-copy">
+            <div className="meeting-template-label">Weekly templates</div>
+            <div className="meeting-template-help">
+              Apply a saved weekly pattern, save the current selection, or create one from scratch.
+            </div>
+          </div>
+
+          <div className="meeting-template-strip-controls">
+            <select
+              className="form-select meeting-template-select"
+              value={selectedTemplateID}
+              onChange={onTemplateSelectChange}
+              disabled={btnDisabled || templates.length === 0}
+            >
+              <option value="">Choose a template</option>
+              {templates.map((template) => (
+                <option key={template.id} value={template.id}>
+                  {template.name}
+                </option>
+              ))}
+            </select>
+
+            <div className="meeting-template-preview">
+              {selectedTemplate
+                ? selectedTemplate.preview
+                : templates.length === 0
+                ? 'No saved templates yet. Save your current schedule to create one.'
+                : 'No template selected'}
+            </div>
+
+            <div className="meeting-template-actions meeting-template-actions-inline">
+              <NonFocusButton
+                className="btn btn-primary meeting-avl-button"
+                onClick={onApplyTemplate}
+                disabled={btnDisabled || !selectedTemplate}
+              >
+                Apply
+              </NonFocusButton>
+              <NonFocusButton
+                className="btn btn-outline-secondary meeting-avl-button"
+                onClick={onSaveTemplate}
+                disabled={btnDisabled}
+              >
+                Save current
+              </NonFocusButton>
+              <NonFocusButton
+                className="btn btn-outline-secondary meeting-avl-button"
+                onClick={() =>
+                  showToast({
+                    msg: 'Weekly template builder is next',
+                    msgType: 'success',
+                    autoClose: true,
+                  })
+                }
+                disabled={btnDisabled}
+              >
+                New weekly template
+              </NonFocusButton>
+              <NonFocusButton
+                className="btn btn-outline-secondary meeting-avl-button"
+                onClick={() => setShowManageTemplatesModal(true)}
+                disabled={btnDisabled || templates.length === 0}
+              >
+                Library
+              </NonFocusButton>
+            </div>
+          </div>
+        </div>
+      )}
 
       <BottomOverlay>
         {onDeleteBtnClick && (

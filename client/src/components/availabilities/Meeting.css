@@ -448,3 +448,76 @@
     flex: 1 1 0;
   }
 }
+
+/* --- layout refactor: compact availability, secondary templates strip --- */
+
+.top-controls-row {
+  align-items: flex-start !important;
+}
+
+.meeting-mode-card-compact {
+  min-width: 0;
+  max-width: 430px;
+  padding: 0.8rem 0.95rem;
+  gap: 0.25rem;
+}
+
+.meeting-mode-card-compact .meeting-mode-help {
+  margin-bottom: 0.35rem;
+}
+
+.meeting-template-strip {
+  margin-top: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(120, 200, 255, 0.12);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.9rem 1rem;
+  align-items: flex-start;
+}
+
+.meeting-template-strip-copy {
+  flex: 0 1 280px;
+  min-width: 220px;
+}
+
+.meeting-template-strip-controls {
+  flex: 1 1 560px;
+  min-width: 280px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.meeting-template-actions-inline > .btn {
+  flex: 1 1 150px;
+}
+
+.meeting-template-manage {
+  background: rgba(6, 8, 12, 0.72);
+  border-radius: 14px;
+  padding: 0.8rem;
+}
+
+.meeting-template-manage-item {
+  background: rgba(10, 12, 18, 0.82);
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+@media (max-width: 767.98px) {
+  .meeting-template-strip {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .meeting-template-strip-copy,
+  .meeting-template-strip-controls {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .meeting-template-actions-inline > .btn {
+    flex: 1 1 100%;
+  }
+}
