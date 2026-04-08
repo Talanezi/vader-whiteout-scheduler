@@ -335,6 +335,64 @@ export default function WeeklyTemplatesStrip({
   }, [selectedTemplateID]);
 
   useEffect(() => {
+    const applyDragCell = (weekday: number, hour: number, minute: number) => {
+      const cellKey = `${weekday}-${hour}-${minute}`;
+      if (builderDraggedCellsRef.current.has(cellKey)) return;
+      builderDraggedCellsRef.current.add(cellKey);
+
+      setTemplateBuilder((currentBuilder) => {
+        const hasSlot = hasBuilderSlot(currentBuilder.slots, weekday, hour, minute);
+        const mode = builderDragModeRef.current ?? (hasSlot ? 'remove' : 'add');
+
+        if (mode === 'add' && hasSlot) return currentBuilder;
+        if (mode === 'remove' && !hasSlot) return currentBuilder;
+
+        return {
+          ...currentBuilder,
+          slots: toggleBuilderSlot(currentBuilder.slots, weekday, hour, minute),
+        };
+      });
+    };
+
+    const stopBuilderDrag = () => {
+      builderDragModeRef.current = null;
+      builderDraggedCellsRef.current = new Set();
+    };
+
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!builderDragModeRef.current) return;
+      const touch = event.touches[0];
+      if (!touch) return;
+
+      const el = document.elementFromPoint(touch.clientX, touch.clientY);
+      const cellEl = el instanceof Element
+        ? el.closest('[data-template-cell="true"]')
+        : null;
+      if (!(cellEl instanceof HTMLElement)) return;
+
+      const weekday = Number(cellEl.dataset.weekday);
+      const hour = Number(cellEl.dataset.hour);
+      const minute = Number(cellEl.dataset.minute);
+      if ([weekday, hour, minute].some(Number.isNaN)) return;
+
+      event.preventDefault();
+      applyDragCell(weekday, hour, minute);
+    };
+
+    document.addEventListener('mouseup', stopBuilderDrag);
+    document.addEventListener('touchend', stopBuilderDrag);
+    document.addEventListener('touchcancel', stopBuilderDrag);
+    document.addEventListener('touchmove', handleTouchMove, { passive: false });
+
+    return () => {
+      document.removeEventListener('mouseup', stopBuilderDrag);
+      document.removeEventListener('touchend', stopBuilderDrag);
+      document.removeEventListener('touchcancel', stopBuilderDrag);
+      document.removeEventListener('touchmove', handleTouchMove);
+    };
+  }, []);
+
+  useEffect(() => {
     const handleMouseUp = () => stopBuilderDrag();
     window.addEventListener('mouseup', handleMouseUp);
     return () => window.removeEventListener('mouseup', handleMouseUp);
@@ -760,12 +818,45 @@ export default function WeeklyTemplatesStrip({
                           className={`template-builder-cell template-builder-cell-half template-builder-cell-half-top ${
                             firstHalfActive ? 'is-active' : ''
                           }`}
-                          onClick={() =>
+                          data-template-cell="true"
+                          data-weekday={day}
+                          data-hour={hour}
+                          data-minute={0}
+                          onMouseDown={() => {
+                            builderDragModeRef.current = firstHalfActive ? 'remove' : 'add';
+                            builderDraggedCellsRef.current = new Set();
                             setTemplateBuilder((currentBuilder) => ({
                               ...currentBuilder,
                               slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 0),
-                            }))
-                          }
+                            }));
+                            builderDraggedCellsRef.current.add(`${day}-${hour}-0`);
+                          }}
+                          onMouseEnter={() => {
+                            if (!builderDragModeRef.current) return;
+                            const cellKey = `${day}-${hour}-0`;
+                            if (builderDraggedCellsRef.current.has(cellKey)) return;
+                            builderDraggedCellsRef.current.add(cellKey);
+                            setTemplateBuilder((currentBuilder) => {
+                              const hasSlot = hasBuilderSlot(currentBuilder.slots, day, hour, 0);
+                              const mode = builderDragModeRef.current;
+                              if (mode === 'add' && hasSlot) return currentBuilder;
+                              if (mode === 'remove' && !hasSlot) return currentBuilder;
+                              return {
+                                ...currentBuilder,
+                                slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 0),
+                              };
+                            });
+                          }}
+                          onTouchStart={(event) => {
+                            event.preventDefault();
+                            builderDragModeRef.current = firstHalfActive ? 'remove' : 'add';
+                            builderDraggedCellsRef.current = new Set();
+                            setTemplateBuilder((currentBuilder) => ({
+                              ...currentBuilder,
+                              slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 0),
+                            }));
+                            builderDraggedCellsRef.current.add(`${day}-${hour}-0`);
+                          }}
                           aria-label={`${day}-${hour}-00`}
                         />
                         <button
@@ -773,12 +864,45 @@ export default function WeeklyTemplatesStrip({
                           className={`template-builder-cell template-builder-cell-half template-builder-cell-half-bottom ${
                             secondHalfActive ? 'is-active' : ''
                           }`}
-                          onClick={() =>
+                          data-template-cell="true"
+                          data-weekday={day}
+                          data-hour={hour}
+                          data-minute={30}
+                          onMouseDown={() => {
+                            builderDragModeRef.current = secondHalfActive ? 'remove' : 'add';
+                            builderDraggedCellsRef.current = new Set();
                             setTemplateBuilder((currentBuilder) => ({
                               ...currentBuilder,
                               slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 30),
-                            }))
-                          }
+                            }));
+                            builderDraggedCellsRef.current.add(`${day}-${hour}-30`);
+                          }}
+                          onMouseEnter={() => {
+                            if (!builderDragModeRef.current) return;
+                            const cellKey = `${day}-${hour}-30`;
+                            if (builderDraggedCellsRef.current.has(cellKey)) return;
+                            builderDraggedCellsRef.current.add(cellKey);
+                            setTemplateBuilder((currentBuilder) => {
+                              const hasSlot = hasBuilderSlot(currentBuilder.slots, day, hour, 30);
+                              const mode = builderDragModeRef.current;
+                              if (mode === 'add' && hasSlot) return currentBuilder;
+                              if (mode === 'remove' && !hasSlot) return currentBuilder;
+                              return {
+                                ...currentBuilder,
+                                slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 30),
+                              };
+                            });
+                          }}
+                          onTouchStart={(event) => {
+                            event.preventDefault();
+                            builderDragModeRef.current = secondHalfActive ? 'remove' : 'add';
+                            builderDraggedCellsRef.current = new Set();
+                            setTemplateBuilder((currentBuilder) => ({
+                              ...currentBuilder,
+                              slots: toggleBuilderSlot(currentBuilder.slots, day, hour, 30),
+                            }));
+                            builderDraggedCellsRef.current.add(`${day}-${hour}-30`);
+                          }}
                           aria-label={`${day}-${hour}-30`}
                         />
                       </div>
