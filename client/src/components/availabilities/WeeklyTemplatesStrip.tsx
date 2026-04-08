@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import InfoModal from 'components/InfoModal';
+import Modal from 'react-bootstrap/Modal';
 import NonFocusButton from 'components/NonFocusButton';
 import { useToast } from 'components/Toast';
 import { useAppDispatch, useAppSelector } from 'app/hooks';
@@ -395,18 +395,6 @@ export default function WeeklyTemplatesStrip({
             </NonFocusButton>
             <NonFocusButton
               className="btn btn-outline-secondary meeting-avl-button"
-              onClick={() =>
-                showToast({
-                  msg: 'Weekly template builder is next',
-                  msgType: 'success',
-                  autoClose: true,
-                })
-              }
-            >
-              New weekly template
-            </NonFocusButton>
-            <NonFocusButton
-              className="btn btn-outline-secondary meeting-avl-button"
               onClick={() => setShowManageTemplatesModal(true)}
               disabled={templates.length === 0}
             >
@@ -416,59 +404,92 @@ export default function WeeklyTemplatesStrip({
         </div>
       </div>
 
-      <InfoModal show={showManageTemplatesModal} setShow={setShowManageTemplatesModal}>
-        <div className="meeting-template-manage">
-          <div className="meeting-template-manage-title">Manage templates</div>
+      <Modal
+        backdrop="static"
+        show={showManageTemplatesModal}
+        onHide={() => setShowManageTemplatesModal(false)}
+        centered
+        dialogClassName="meeting-template-library-modal"
+      >
+        <Modal.Header closeButton className="border-bottom-0 pb-2">
+          <div className="meeting-template-library-header">
+            <Modal.Title>Manage templates</Modal.Title>
+            <NonFocusButton
+              className="btn btn-outline-primary btn-sm"
+              onClick={() =>
+                showToast({
+                  msg: 'Weekly template builder is next',
+                  msgType: 'success',
+                  autoClose: true,
+                })
+              }
+            >
+              + Add template
+            </NonFocusButton>
+          </div>
+        </Modal.Header>
 
-          {templates.length === 0 ? (
-            <p className="mb-0 text-center">No saved templates yet.</p>
-          ) : (
-            <div className="meeting-template-manage-list">
-              {templates.map((template) => (
-                <div key={template.id} className="meeting-template-manage-item">
-                  <div className="meeting-template-manage-copy">
-                    <div className="meeting-template-manage-name">{template.name}</div>
-                    <div className="meeting-template-manage-preview">{template.preview}</div>
-                    <TemplateMiniPreview slots={template.slots} />
-                  </div>
+        <Modal.Body className="meeting-template-library-body">
+          <div className="meeting-template-manage">
+            {templates.length === 0 ? (
+              <p className="mb-0 text-center">No saved templates yet.</p>
+            ) : (
+              <div className="meeting-template-manage-list">
+                {templates.map((template) => (
+                  <div key={template.id} className="meeting-template-manage-item">
+                    <div className="meeting-template-manage-copy">
+                      <div className="meeting-template-manage-name">{template.name}</div>
+                      <div className="meeting-template-manage-preview">{template.preview}</div>
+                      <TemplateMiniPreview slots={template.slots} />
+                    </div>
 
-                  <div className="meeting-template-manage-actions">
-                    <NonFocusButton
-                      className="btn btn-outline-secondary btn-sm"
-                      onClick={() => {
-                        const nextName = window.prompt('Rename template', template.name);
-                        if (!nextName?.trim()) return;
-                        persistTemplates(
-                          templates.map((item) =>
-                            item.id === template.id
-                              ? { ...item, name: nextName.trim(), updatedAt: new Date().toISOString() }
-                              : item
-                          )
-                        );
-                      }}
-                    >
-                      Rename
-                    </NonFocusButton>
-                    <NonFocusButton
-                      className="btn btn-outline-danger btn-sm"
-                      onClick={() => {
-                        if (!window.confirm(`Delete template "${template.name}"?`)) return;
-                        const nextTemplates = templates.filter((item) => item.id !== template.id);
-                        persistTemplates(nextTemplates);
-                        if (selectedTemplateID === template.id) {
-                          setSelectedTemplateID(nextTemplates[0]?.id ?? '');
-                        }
-                      }}
-                    >
-                      Delete
-                    </NonFocusButton>
+                    <div className="meeting-template-manage-actions">
+                      <NonFocusButton
+                        className="btn btn-outline-secondary btn-sm"
+                        onClick={() => {
+                          const nextName = window.prompt('Rename template', template.name);
+                          if (!nextName?.trim()) return;
+                          persistTemplates(
+                            templates.map((item) =>
+                              item.id === template.id
+                                ? { ...item, name: nextName.trim(), updatedAt: new Date().toISOString() }
+                                : item
+                            )
+                          );
+                        }}
+                      >
+                        Rename
+                      </NonFocusButton>
+                      <NonFocusButton
+                        className="btn btn-outline-danger btn-sm"
+                        onClick={() => {
+                          if (!window.confirm(`Delete template "${template.name}"?`)) return;
+                          const nextTemplates = templates.filter((item) => item.id !== template.id);
+                          persistTemplates(nextTemplates);
+                          if (selectedTemplateID === template.id) {
+                            setSelectedTemplateID(nextTemplates[0]?.id ?? '');
+                          }
+                        }}
+                      >
+                        Delete
+                      </NonFocusButton>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </InfoModal>
+                ))}
+              </div>
+            )}
+          </div>
+        </Modal.Body>
+
+        <Modal.Footer className="border-top-0 pt-2">
+          <NonFocusButton
+            className="btn btn-outline-secondary custom-btn-min-width"
+            onClick={() => setShowManageTemplatesModal(false)}
+          >
+            Done
+          </NonFocusButton>
+        </Modal.Footer>
+      </Modal>
     </>
   );
 }
