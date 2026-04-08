@@ -529,20 +529,34 @@
   }
 
   .vw-respondents-col {
-    flex: 0 0 auto;
+    flex: 0 0 220px;
+    width: 220px;
     display: flex;
     flex-direction: column;
-    gap: 1.1rem;
-    min-width: 260px;
+    gap: 0.9rem;
   }
 
   .vw-right-availability-card {
-    max-width: 320px;
-    min-width: 260px;
+    width: 220px;
+    min-width: 220px;
+    max-width: 220px;
+    padding: 0.9rem 0.95rem;
+  }
+
+  .vw-right-availability-card .meeting-mode-toggle {
+    width: 100%;
+  }
+
+  .vw-right-availability-card .meeting-mode-pill {
+    flex: 1 1 0;
+    min-width: 0;
+    padding-left: 0.6rem;
+    padding-right: 0.6rem;
   }
 
   .respondents-container.vw-respondents-card {
     margin-top: 0;
-    min-width: 260px;
+    min-width: 0;
+    width: 220px;
   }
 }
