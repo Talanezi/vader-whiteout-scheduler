@@ -346,6 +346,16 @@ export default function WeeklyTemplatesStrip({
     });
   };
 
+  const openTemplateBuilderStub = (template?: SavedTemplate) => {
+    showToast({
+      msg: template
+        ? `Template editor for "${template.name}" is next`
+        : 'Weekly template builder is next',
+      msgType: 'success',
+      autoClose: true,
+    });
+  };
+
   return (
     <>
       <div className="meeting-template-strip meeting-template-strip-below-grid">
@@ -421,13 +431,7 @@ export default function WeeklyTemplatesStrip({
             </div>
             <NonFocusButton
               className="btn btn-primary btn-sm meeting-template-library-add-btn"
-              onClick={() =>
-                showToast({
-                  msg: 'Weekly template builder is next',
-                  msgType: 'success',
-                  autoClose: true,
-                })
-              }
+              onClick={() => openTemplateBuilderStub()}
             >
               + Add template
             </NonFocusButton>
@@ -471,6 +475,12 @@ export default function WeeklyTemplatesStrip({
                       </NonFocusButton>
                       <NonFocusButton
                         className="btn btn-outline-secondary btn-sm"
+                        onClick={() => openTemplateBuilderStub(template)}
+                      >
+                        Edit
+                      </NonFocusButton>
+                      <NonFocusButton
+                        className="btn btn-outline-secondary btn-sm"
                         onClick={() => {
                           const nextName = window.prompt('Rename template', template.name);
                           if (!nextName?.trim()) return;
@@ -506,7 +516,14 @@ export default function WeeklyTemplatesStrip({
           </div>
         </Modal.Body>
 
-
+        <Modal.Footer className="border-top-0 pt-2">
+          <NonFocusButton
+            className="btn btn-outline-secondary custom-btn-min-width"
+            onClick={() => setShowManageTemplatesModal(false)}
+          >
+            Done
+          </NonFocusButton>
+        </Modal.Footer>
       </Modal>
     </>
   );
