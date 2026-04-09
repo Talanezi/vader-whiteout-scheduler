@@ -24,9 +24,6 @@ export class UserTemplate {
   @JoinColumn({ name: 'UserID' })
   User: User;
 
-  @Column()
-  UserID: number;
-
   @CreateDateColumn()
   CreatedAt: Date;
 

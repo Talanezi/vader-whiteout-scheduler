@@ -13,7 +13,7 @@ export class UserTemplatesService {
 
   async getUserTemplates(userID: number) {
     const rows = await this.userTemplatesRepo.find({
-      where: { UserID: userID },
+      where: { User: { ID: userID } },
       order: { UpdatedAt: 'DESC' },
     });
 
@@ -28,7 +28,7 @@ export class UserTemplatesService {
 
   async createUserTemplate(userID: number, dto: CreateUserTemplateDto) {
     const row = this.userTemplatesRepo.create({
-      UserID: userID,
+      User: { ID: userID } as any,
       Name: dto.name.trim(),
       SlotsJSON: JSON.stringify(dto.slots),
     });
@@ -44,7 +44,7 @@ export class UserTemplatesService {
 
   async updateUserTemplate(userID: number, templateID: number, dto: UpdateUserTemplateDto) {
     const row = await this.userTemplatesRepo.findOne({
-      where: { ID: templateID, UserID: userID },
+      where: { ID: templateID, User: { ID: userID } },
     });
     if (!row) throw new NotFoundException('Template not found');
 
@@ -63,7 +63,7 @@ export class UserTemplatesService {
 
   async deleteUserTemplate(userID: number, templateID: number) {
     const row = await this.userTemplatesRepo.findOne({
-      where: { ID: templateID, UserID: userID },
+      where: { ID: templateID, User: { ID: userID } },
     });
     if (!row) throw new NotFoundException('Template not found');
 
