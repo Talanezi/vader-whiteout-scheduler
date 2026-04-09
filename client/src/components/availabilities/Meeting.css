@@ -947,4 +947,18 @@
   border-color: rgba(255, 255, 255, 0.08);
   color: rgba(255, 255, 255, 0.38);
   box-shadow: none;
+}\n\n
+/* --- template mini preview width refinement --- */
+.template-mini-preview {
+  width: 100%;
+  max-width: 420px;
+}
+
+.template-mini-day {
+  grid-template-columns: 16px minmax(0, 1fr);
+  width: 100%;
+}
+
+.template-mini-day-track {
+  width: 100%;
 }
