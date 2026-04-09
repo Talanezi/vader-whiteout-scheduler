@@ -908,3 +908,43 @@
     min-width: 560px;
   }
 }
+
+
+/* --- weekly template strip button emphasis --- */
+.meeting-template-actions-inline > .btn {
+  border-width: 1px;
+}
+
+.meeting-template-actions-inline > .btn:first-child {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.96);
+}
+
+.meeting-template-actions-inline > .btn:first-child:hover,
+.meeting-template-actions-inline > .btn:first-child:focus {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
+.meeting-template-actions-inline > .btn:last-child {
+  background: rgba(88, 157, 255, 0.2);
+  border-color: rgba(88, 157, 255, 0.42);
+  color: #eaf4ff;
+  box-shadow: 0 10px 24px rgba(39, 115, 255, 0.14);
+}
+
+.meeting-template-actions-inline > .btn:last-child:hover,
+.meeting-template-actions-inline > .btn:last-child:focus {
+  background: rgba(88, 157, 255, 0.28);
+  border-color: rgba(120, 183, 255, 0.58);
+  color: #ffffff;
+}
+
+.meeting-template-actions-inline > .btn:disabled {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.38);
+  box-shadow: none;
+}
