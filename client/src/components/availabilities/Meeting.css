@@ -707,7 +707,7 @@
 
 .meeting-template-manage-item {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1.35fr) auto;
   align-items: start;
   gap: 1rem;
   padding: 0.95rem 1rem;
@@ -951,7 +951,6 @@
 /* --- template mini preview width refinement --- */
 .template-mini-preview {
   width: 100%;
-  max-width: 420px;
 }
 
 .template-mini-day {

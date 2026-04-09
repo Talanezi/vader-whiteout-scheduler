@@ -18,6 +18,8 @@ import {
 
 const TEMPLATE_KEY = 'vw_availability_templates_v2';
 const LAST_TEMPLATE_KEY = 'vw_last_availability_template_v2';
+const TEMPLATE_PREVIEW_START_MINUTES = 8 * 60;
+const TEMPLATE_PREVIEW_END_MINUTES = 23 * 60;
 
 type TemplateSlot = {
   weekday: number;
