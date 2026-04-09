@@ -3,6 +3,12 @@ import Form from 'react-bootstrap/Form';
 import Modal from 'react-bootstrap/Modal';
 import NonFocusButton from 'components/NonFocusButton';
 import { useToast } from 'components/Toast';
+import {
+  useGetMyTemplatesQuery,
+  useCreateMyTemplateMutation,
+  useUpdateMyTemplateMutation,
+  useDeleteMyTemplateMutation,
+} from 'slices/userTemplatesApi';
 import { useAppDispatch, useAppSelector } from 'app/hooks';
 import {
   addDateTimesAndResetMouse,
@@ -270,7 +276,9 @@ function TemplateMiniPreview({ slots }: { slots: TemplateSlot[] }) {
   );
 }
 
-function buildTemplateBuilderState(template?: SavedTemplate): TemplateBuilderState {
+function buildTemplateBuilderState(
+  template?: { id: string; name: string; slots: TemplateSlot[] } | null
+): TemplateBuilderState {
   if (!template) {
     return {
       id: null,
@@ -326,6 +334,14 @@ export default function WeeklyTemplatesStrip({
   const [templateBuilder, setTemplateBuilder] = useState<TemplateBuilderState>(
     buildTemplateBuilderState()
   );
+  const {
+    data: dbTemplatesData,
+    isSuccess: dbTemplatesLoaded,
+    refetch: refetchDbTemplates,
+  } = useGetMyTemplatesQuery();
+  const [createMyTemplate] = useCreateMyTemplateMutation();
+  const [updateMyTemplate] = useUpdateMyTemplateMutation();
+  const [deleteMyTemplate] = useDeleteMyTemplateMutation();
   const builderDragModeRef = useRef<'add' | 'remove' | null>(null);
   const builderDraggedCellsRef = useRef<Set<string>>(new Set());
 
@@ -410,8 +426,10 @@ export default function WeeklyTemplatesStrip({
 
   if (!canUseTemplate) return null;
 
+  const effectiveTemplates = dbTemplatesLoaded ? dbTemplatesData ?? [] : templates;
+
   const selectedTemplate =
-    templates.find((template) => template.id === selectedTemplateID) ?? null;
+    effectiveTemplates.find((template) => template.id === selectedTemplateID) ?? null;
 
   const persistTemplates = (nextTemplates: SavedTemplate[]) => {
     setTemplates(nextTemplates);
@@ -443,6 +461,21 @@ export default function WeeklyTemplatesStrip({
       updatedAt: now,
     };
 
+    if (dbTemplatesLoaded) {
+      createMyTemplate({ name: name.trim(), slots })
+        .unwrap()
+        .then((saved) => {
+          setSelectedTemplateID(saved.id);
+          refetchDbTemplates();
+          showToast({
+            msg: 'Saved current availability as a template',
+            msgType: 'success',
+            autoClose: true,
+          });
+        });
+      return;
+    }
+
     const nextTemplates = [...templates, template];
     persistTemplates(nextTemplates);
     setSelectedTemplateID(template.id);
@@ -470,7 +503,9 @@ export default function WeeklyTemplatesStrip({
     });
   };
 
-  const openTemplateBuilderStub = (template?: SavedTemplate) => {
+  const openTemplateBuilderStub = (
+    template?: { id: string; name: string; slots: TemplateSlot[] } | null
+  ) => {
     setTemplateBuilder(buildTemplateBuilderState(template));
     setShowTemplateBuilderModal(true);
   };
@@ -625,7 +660,7 @@ export default function WeeklyTemplatesStrip({
             className="form-select meeting-template-select"
             value={selectedTemplateID}
             onChange={(event) => setSelectedTemplateID(event.target.value)}
-            disabled={templates.length === 0}
+            disabled={effectiveTemplates.length === 0}
           >
             <option value="">Choose a template</option>
             {templates.map((template) => (
@@ -637,8 +672,8 @@ export default function WeeklyTemplatesStrip({
 
           <div className="meeting-template-preview">
             {selectedTemplate
-              ? selectedTemplate.preview
-              : templates.length === 0
+              ? summarizeTemplateSlots(selectedTemplate.slots)
+              : effectiveTemplates.length === 0
               ? 'No saved templates yet. Save your current schedule to create one.'
               : 'No template selected'}
           </div>
@@ -653,7 +688,7 @@ export default function WeeklyTemplatesStrip({
             <NonFocusButton
               className="btn btn-outline-secondary meeting-avl-button"
               onClick={() => setShowManageTemplatesModal(true)}
-              disabled={templates.length === 0}
+              disabled={effectiveTemplates.length === 0}
             >
               Template Studio
             </NonFocusButton>
@@ -687,15 +722,15 @@ export default function WeeklyTemplatesStrip({
 
         <Modal.Body className="meeting-template-library-body">
           <div className="meeting-template-manage">
-            {templates.length === 0 ? (
+            {effectiveTemplates.length === 0 ? (
               <p className="mb-0 text-center">No saved templates yet.</p>
             ) : (
               <div className="meeting-template-manage-list">
-                {templates.map((template) => (
+                {effectiveTemplates.map((template) => (
                   <div key={template.id} className="meeting-template-manage-item">
                     <div className="meeting-template-manage-copy">
                       <div className="meeting-template-manage-name">{template.name}</div>
-                      <div className="meeting-template-manage-preview">{template.preview}</div>
+                      <div className="meeting-template-manage-preview">{summarizeTemplateSlots(template.slots)}</div>
                       <TemplateMiniPreview slots={template.slots} />
                     </div>
 
@@ -731,13 +766,22 @@ export default function WeeklyTemplatesStrip({
                         onClick={() => {
                           const nextName = window.prompt('Rename template', template.name);
                           if (!nextName?.trim()) return;
-                          persistTemplates(
-                            templates.map((item) =>
-                              item.id === template.id
-                                ? { ...item, name: nextName.trim(), updatedAt: new Date().toISOString() }
-                                : item
-                            )
-                          );
+                          if (dbTemplatesLoaded) {
+                            updateMyTemplate({
+                              id: template.id,
+                              name: nextName.trim(),
+                            })
+                              .unwrap()
+                              .then(() => refetchDbTemplates());
+                          } else {
+                            persistTemplates(
+                              templates.map((item) =>
+                                item.id === template.id
+                                  ? { ...item, name: nextName.trim(), updatedAt: new Date().toISOString() }
+                                  : item
+                              )
+                            );
+                          }
                         }}
                       >
                         Rename
@@ -746,10 +790,21 @@ export default function WeeklyTemplatesStrip({
                         className="btn btn-outline-danger btn-sm"
                         onClick={() => {
                           if (!window.confirm(`Delete template "${template.name}"?`)) return;
-                          const nextTemplates = templates.filter((item) => item.id !== template.id);
-                          persistTemplates(nextTemplates);
-                          if (selectedTemplateID === template.id) {
-                            setSelectedTemplateID(nextTemplates[0]?.id ?? '');
+                          if (dbTemplatesLoaded) {
+                            deleteMyTemplate({ id: template.id })
+                              .unwrap()
+                              .then(() => {
+                                refetchDbTemplates();
+                                if (selectedTemplateID === template.id) {
+                                  setSelectedTemplateID('');
+                                }
+                              });
+                          } else {
+                            const nextTemplates = templates.filter((item) => item.id !== template.id);
+                            persistTemplates(nextTemplates);
+                            if (selectedTemplateID === template.id) {
+                              setSelectedTemplateID(nextTemplates[0]?.id ?? '');
+                            }
                           }
                         }}
                       >
