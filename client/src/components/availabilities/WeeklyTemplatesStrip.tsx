@@ -244,8 +244,16 @@ function TemplateMiniPreview({ slots }: { slots: TemplateSlot[] }) {
             <div className="template-mini-day-label">{labels[day]}</div>
             <div className="template-mini-day-track">
               {ranges.map((range, idx) => {
-                const left = (range.start / 1440) * 100;
-                const width = ((range.end - range.start) / 1440) * 100;
+                const startMinutes = Math.max(range.start, TEMPLATE_PREVIEW_START_MINUTES);
+                const endMinutes = Math.min(range.end, TEMPLATE_PREVIEW_END_MINUTES);
+                if (endMinutes <= startMinutes) return null;
+
+                const previewSpan =
+                  TEMPLATE_PREVIEW_END_MINUTES - TEMPLATE_PREVIEW_START_MINUTES;
+                const left =
+                  ((startMinutes - TEMPLATE_PREVIEW_START_MINUTES) / previewSpan) * 100;
+                const width = ((endMinutes - startMinutes) / previewSpan) * 100;
+
                 return (
                   <span
                     key={idx}
