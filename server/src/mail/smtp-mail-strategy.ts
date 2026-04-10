@@ -42,7 +42,7 @@ export default class SMTPMailStrategy implements IMailStrategy {
       transportOptions.requireTLS = true;
     }
     const messageDefaults: SMTPTransport.Options = {
-      from: { name: 'CabbageMeet', address: smtpFrom },
+      from: { name: 'Vader Whiteout Team', address: smtpFrom },
     };
     if (
       process.env.NODE_ENV === 'development' ||
@@ -56,12 +56,13 @@ export default class SMTPMailStrategy implements IMailStrategy {
     );
   }
 
-  async sendNow({ recipient: { address, name }, subject, body }: SendParams) {
+  async sendNow({ recipient: { address, name }, subject, body, html }: SendParams) {
     this.logger.debug(`Sending to=${address} (subject="${subject}")`);
     await this.transport.sendMail({
       to: { address, name },
       subject,
       text: body,
+      html,
     });
   }
 }

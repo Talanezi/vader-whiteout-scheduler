@@ -17,6 +17,7 @@ export interface SendParams {
   };
   subject: string;
   body: string;
+  html?: string;
 }
 
 export interface IMailStrategy {

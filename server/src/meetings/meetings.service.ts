@@ -7,6 +7,7 @@ import { Repository } from 'typeorm';
 import ConfigService from '../config/config.service';
 import type { DatabaseType } from '../config/env.validation';
 import MailService from '../mail/mail.service';
+import { emailShell, escapeHtml } from '../mail/mail-template.utils';
 import { assert } from '../misc.utils';
 import OAuth2Service from '../oauth2/oauth2.service';
 import User from '../users/user.entity';
@@ -188,16 +189,45 @@ export default class MeetingsService {
     return (
       `Hello ${name},\n` +
       '\n' +
-      `The meeting "${meeting.Name}" has been scheduled:\n` +
+      `The meeting "${meeting.Name}" has been scheduled.\n` +
       '\n' +
       `  ${dayString}\n` +
       `  ${timeRangeString}\n` +
       '\n' +
       `View details here: ${createPublicMeetingURL(this.publicURL, meeting)}\n` +
       '\n' +
-      '-- \n' +
-      `CabbageMeet | ${this.publicURL}\n`
+      `Best,\n` +
+      `Vader Whiteout Team\n`
     );
+  }
+
+  private createScheduledNotificationEmailHtml(
+    meeting: Meeting,
+    name: string,
+  ): string {
+    const { dayString, timeRangeString } = formatScheduledTimeRange(
+      meeting.ScheduledStartDateTime,
+      meeting.ScheduledEndDateTime,
+      meeting.Timezone,
+    );
+    return emailShell({
+      preheader: `${meeting.Name} now has a confirmed time.`,
+      firstName: name,
+      ctaUrl: createPublicMeetingURL(this.publicURL, meeting),
+      ctaText: 'View meeting',
+      bodyHtml: `
+        <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          <em>${escapeHtml(meeting.Name)}</em> has been scheduled.
+        </p>
+        <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          ${escapeHtml(dayString)}<br />
+          ${escapeHtml(timeRangeString)}
+        </p>
+        <p style="margin:0 0 12px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          You can view the full meeting details below.
+        </p>
+      `,
+    });
   }
 
   async scheduleMeeting(
@@ -230,6 +260,7 @@ export default class MeetingsService {
           recipient: { name, address },
           subject: `${meeting.Name} has been scheduled`,
           body: this.createScheduledNotificationEmailBody(meeting, name),
+          html: this.createScheduledNotificationEmailHtml(meeting, name),
         });
       }
     }
@@ -315,19 +346,34 @@ export default class MeetingsService {
     const respondentName = user?.Name ?? guestName;
     const body = `Hello ${meetingCreator.Name},
 
-${respondentName} has added their availabilities to the meeting "${
-      meeting.Name
-    }".
+${respondentName} added their availability for "${meeting.Name}".
 
 Please visit ${createPublicMeetingURL(this.publicURL, meeting)} for details.
 
---${' '}
-CabbageMeet | ${this.publicURL}
+Best,
+Vader Whiteout Team
 `;
+
+    const html = emailShell({
+      preheader: `${respondentName} added availability for ${meeting.Name}.`,
+      firstName: meetingCreator.Name,
+      ctaUrl: createPublicMeetingURL(this.publicURL, meeting),
+      ctaText: 'View meeting',
+      bodyHtml: `
+        <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          <strong>${escapeHtml(respondentName ?? 'Someone')}</strong> added their availability for <em>${escapeHtml(meeting.Name)}</em>.
+        </p>
+        <p style="margin:0 0 12px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          You can review the latest responses and decide on the best time below.
+        </p>
+      `,
+    });
+
     await this.mailService.sendNowOrLater({
-      subject: `${respondentName} responded to "${meeting.Name}"`,
+      subject: `New availability update for "${meeting.Name}"`,
       recipient: { address: meetingCreator.Email, name: meetingCreator.Name },
       body,
+      html,
     });
   }
 

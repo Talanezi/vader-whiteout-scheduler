@@ -18,11 +18,11 @@ export default class MailerSendMailStrategy implements IMailStrategy {
     assert(this.smtpFrom, 'SMTP_FROM must be set');
   }
 
-  async sendNow({ recipient: { address, name }, subject, body }: SendParams) {
+  async sendNow({ recipient: { address, name }, subject, body, html }: SendParams) {
     const requestBody = {
       from: {
         email: this.smtpFrom,
-        name: 'CabbageMeet',
+        name: 'Vader Whiteout Team',
       },
       to: [
         {
@@ -32,6 +32,7 @@ export default class MailerSendMailStrategy implements IMailStrategy {
       ],
       subject,
       text: body,
+      html,
     };
     this.logger.debug(`Sending to=${address} (subject="${subject}")`);
     const response = await request(EMAIL_API_URL, {
