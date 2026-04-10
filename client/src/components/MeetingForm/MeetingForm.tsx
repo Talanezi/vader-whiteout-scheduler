@@ -20,8 +20,8 @@ export default function MeetingForm() {
   const [meetingName, setMeetingName] = useState('');
   const [meetingLocation, setMeetingLocation] = useState('');
   const [meetingAbout, setMeetingAbout] = useState('');
-  const [startTime, setStartTime] = useState(17);
-  const [endTime, setEndTime] = useState(22);
+  const [startTime, setStartTime] = useState(8);
+  const [endTime, setEndTime] = useState(21);
 
   const dispatch = useAppDispatch();
   const dates = useAppSelector(selectSelectedDates);
