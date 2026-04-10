@@ -55,7 +55,7 @@ export default class MeetingsService {
     private moduleRef: ModuleRef,
     configService: ConfigService,
   ) {
-    this.publicURL = configService.get('PUBLIC_URL');
+    this.publicURL = configService.get('FRONTEND_PUBLIC_URL') || configService.get('PUBLIC_URL');
     this.dbType = configService.get('DATABASE_TYPE');
   }
 

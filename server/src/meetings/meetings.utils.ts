@@ -13,5 +13,6 @@ export class NoSuchRespondentError extends Error {
 }
 
 export function createPublicMeetingURL(baseURL: string, meeting: Meeting): string {
-  return `${baseURL}/m/${meeting.Slug}`;
+  const trimmed = baseURL.replace(/\/$/, '');
+  return `${trimmed}/m/${meeting.Slug}`;
 }

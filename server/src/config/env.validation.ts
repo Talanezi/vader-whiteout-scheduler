@@ -73,6 +73,12 @@ export class EnvironmentVariables {
   @IsUrl({ require_tld: false })
   PUBLIC_URL: string;
 
+  // Optional separate frontend URL, useful when the API is hosted on a different origin.
+  // Example: https://vaderwhiteout.com/scheduler/#
+  @IsOptional()
+  @IsUrl({ require_tld: false })
+  FRONTEND_PUBLIC_URL?: string;
+
   // Allow requests from the origin of PUBLIC_URL.
   // This is useful if the static assets are being served from a different
   // origin than the API server, e.g. a CDN.
