@@ -7,7 +7,7 @@ import {
 import ConfigService from '../config/config.service';
 import MeetingsService from './meetings.service';
 
-@Controller('api/internal')
+@Controller('internal')
 export default class MeetingsInternalController {
   constructor(
     private readonly meetingsService: MeetingsService,
