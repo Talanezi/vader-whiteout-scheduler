@@ -542,7 +542,7 @@ Vader Whiteout Team
     }
 
     const start = DateTime.fromISO(meeting.ScheduledStartDateTime);
-    const sendAfter = start.minus({ minutes: 2 }); // temporary test window
+    const sendAfter = start.minus({ hours: 1 });
 
     if (sendAfter.toMillis() <= Date.now()) {
       return;
