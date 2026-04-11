@@ -250,6 +250,9 @@ export default class MeetingsService {
       WasScheduledAtLeastOnce: true,
     };
     await this.updateMeetingDB(meeting, updatedInfo);
+    meeting.ScheduledStartDateTime = startDateTime;
+    meeting.ScheduledEndDateTime = endDateTime;
+    meeting.WasScheduledAtLeastOnce = true;
     // Send email notifications
     if (!wasScheduledAtLeastOnce) {
       const respondentsToBeNotified =
