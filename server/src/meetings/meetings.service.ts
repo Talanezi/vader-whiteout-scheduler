@@ -14,6 +14,7 @@ import User from '../users/user.entity';
 import UsersService from '../users/users.service';
 import MeetingRespondent from './meeting-respondent.entity';
 import { MeetingNotificationState } from './meeting-notification-state.entity';
+import { MeetingReminderJob } from './meeting-reminder-job.entity';
 import Meeting from './meeting.entity';
 import { NoSuchMeetingError, NoSuchRespondentError, createPublicMeetingURL } from './meetings.utils';
 
@@ -54,6 +55,8 @@ export default class MeetingsService {
     private respondentsRepository: Repository<MeetingRespondent>,
     @InjectRepository(MeetingNotificationState)
     private meetingNotificationStateRepository: Repository<MeetingNotificationState>,
+    @InjectRepository(MeetingReminderJob)
+    private meetingReminderJobRepository: Repository<MeetingReminderJob>,
     private readonly mailService: MailService,
     private moduleRef: ModuleRef,
     configService: ConfigService,
@@ -251,6 +254,8 @@ export default class MeetingsService {
     if (!wasScheduledAtLeastOnce) {
       const respondentsToBeNotified =
         await this.getRespondentsWithNotificationsEnabled(meeting.ID);
+      const reminderRecipients: { name: string; address: string }[] = [];
+
       for (const respondent of respondentsToBeNotified) {
         if (maybeUser && respondent.User?.ID === maybeUser.ID) {
           // Don't notify the person who scheduled the meeting
@@ -258,6 +263,7 @@ export default class MeetingsService {
         }
         const address = respondent.GuestEmail || respondent.User.Email;
         const name = respondent.GuestName || respondent.User.Name;
+        reminderRecipients.push({ name, address });
         // Do not await the Promise so that we don't block the caller
         this.mailService.sendNowOrLater({
           recipient: { name, address },
@@ -266,6 +272,8 @@ export default class MeetingsService {
           html: this.createScheduledNotificationEmailHtml(meeting, name),
         });
       }
+
+      await this.queueScheduledMeetingReminders(meeting, reminderRecipients);
     }
     // Update respondents' external calendars
     // Do not await the Promise so that we don't block the caller
@@ -280,6 +288,7 @@ export default class MeetingsService {
       ScheduledEndDateTime: null,
     };
     await this.updateMeetingDB(meeting, updatedInfo);
+    await this.deleteReminderJobsForMeeting(meeting.ID);
     // Update respondents' external calendars
     // Do not await the Promise so that we don't block the caller
     this.oauth2Service.tryDeleteEventsForMeetingForAllRespondents(meeting.ID);
@@ -456,6 +465,131 @@ Vader Whiteout Team
       state.PendingRespondentNamesJSON = JSON.stringify([]);
       await this.meetingNotificationStateRepository.save(state);
     }
+  }
+
+
+  private createReminderEmailBody(
+    meeting: Meeting,
+    name: string,
+  ): string {
+    const { dayString, timeRangeString } = formatScheduledTimeRange(
+      meeting.ScheduledStartDateTime,
+      meeting.ScheduledEndDateTime,
+      meeting.Timezone,
+    );
+    return (
+      `Hello ${name},\n` +
+      '\n' +
+      `This is a reminder that "${meeting.Name}" starts soon.\n` +
+      '\n' +
+      `  ${dayString}\n` +
+      `  ${timeRangeString}\n` +
+      '\n' +
+      `View details here: ${createPublicMeetingURL(this.publicURL, meeting)}\n` +
+      '\n' +
+      `Best,\n` +
+      `Vader Whiteout Team\n`
+    );
+  }
+
+  private createReminderEmailHtml(
+    meeting: Meeting,
+    name: string,
+  ): string {
+    const { dayString, timeRangeString } = formatScheduledTimeRange(
+      meeting.ScheduledStartDateTime,
+      meeting.ScheduledEndDateTime,
+      meeting.Timezone,
+    );
+    return emailShell({
+      preheader: `${meeting.Name} starts soon.`,
+      firstName: name,
+      ctaUrl: createPublicMeetingURL(this.publicURL, meeting),
+      ctaText: 'View meeting',
+      bodyHtml: `
+        <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          This is a reminder that <em>${escapeHtml(meeting.Name)}</em> starts soon.
+        </p>
+        <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          ${escapeHtml(dayString)}<br />
+          ${escapeHtml(timeRangeString)}
+        </p>
+        <p style="margin:0 0 12px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+          You can view the full meeting details below.
+        </p>
+      `,
+    });
+  }
+
+  private async deleteReminderJobsForMeeting(meetingID: number) {
+    await this.meetingReminderJobRepository.delete({
+      MeetingID: meetingID,
+      Sent: false,
+    });
+  }
+
+  private async queueScheduledMeetingReminders(
+    meeting: Meeting,
+    recipients: { name: string; address: string }[],
+  ) {
+    await this.deleteReminderJobsForMeeting(meeting.ID);
+
+    if (!meeting.ScheduledStartDateTime) {
+      return;
+    }
+
+    const start = DateTime.fromISO(meeting.ScheduledStartDateTime);
+    const sendAfter = start.minus({ minutes: 2 }); // temporary test window
+
+    if (sendAfter.toMillis() <= Date.now()) {
+      return;
+    }
+
+    const jobs = recipients.map((recipient) =>
+      this.meetingReminderJobRepository.create({
+        MeetingID: meeting.ID,
+        RecipientEmail: recipient.address,
+        RecipientName: recipient.name,
+        SendAfter: sendAfter.toJSDate(),
+        Sent: false,
+      })
+    );
+
+    if (jobs.length > 0) {
+      await this.meetingReminderJobRepository.save(jobs);
+    }
+  }
+
+  async flushPendingMeetingReminders(): Promise<number> {
+    const jobs = await this.meetingReminderJobRepository.find({
+      where: { Sent: false, SendAfter: LessThanOrEqual(new Date()) },
+    });
+
+    let sent = 0;
+
+    for (const job of jobs) {
+      const meeting = await this.meetingsRepository.findOneBy({
+        ID: job.MeetingID,
+      });
+      if (!meeting || !meeting.ScheduledStartDateTime || !meeting.ScheduledEndDateTime) {
+        job.Sent = true;
+        await this.meetingReminderJobRepository.save(job);
+        continue;
+      }
+
+      await this.mailService.sendNowOrLater({
+        subject: `Reminder: "${meeting.Name}" starts soon`,
+        recipient: { address: job.RecipientEmail, name: job.RecipientName },
+        body: this.createReminderEmailBody(meeting, job.RecipientName),
+        html: this.createReminderEmailHtml(meeting, job.RecipientName),
+      });
+
+      job.Sent = true;
+      await this.meetingReminderJobRepository.save(job);
+      sent += 1;
+    }
+
+    return sent;
   }
 
   async addRespondent({

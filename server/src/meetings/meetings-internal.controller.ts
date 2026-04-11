@@ -23,7 +23,10 @@ export default class MeetingsInternalController {
       throw new ForbiddenException('Invalid cron secret');
     }
 
-    const sent = await this.meetingsService.flushPendingCreatorDigests();
-    return { ok: true, sent };
+    const creatorDigestsSent =
+      await this.meetingsService.flushPendingCreatorDigests();
+    const remindersSent =
+      await this.meetingsService.flushPendingMeetingReminders();
+    return { ok: true, creatorDigestsSent, remindersSent };
   }
 }
