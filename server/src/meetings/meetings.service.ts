@@ -381,7 +381,7 @@ export default class MeetingsService {
   }
 
   async flushPendingCreatorDigests() {
-    const cutoff = new Date(Date.now() - 2 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
     const states = await this.meetingNotificationStateRepository.find({
       where: { CreatorDigestPendingSince: LessThanOrEqual(cutoff) },
