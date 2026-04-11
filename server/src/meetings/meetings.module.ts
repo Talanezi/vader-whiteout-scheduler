@@ -7,6 +7,7 @@ import MeetingRespondent from './meeting-respondent.entity';
 import { MeetingNotificationState } from './meeting-notification-state.entity';
 import Meeting from './meeting.entity';
 import { MeetingsController } from './meetings.controller';
+import MeetingsInternalController from './meetings-internal.controller';
 import MeetingsService from './meetings.service';
 
 @Module({
@@ -15,7 +16,7 @@ import MeetingsService from './meetings.service';
     MailModule,
     RateLimiterModule,
   ],
-  controllers: [MeetingsController],
+  controllers: [MeetingsController, MeetingsInternalController],
   providers: [MeetingsService, MeetingDeleterService],
   exports: [MeetingsService],
 })

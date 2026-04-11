@@ -381,7 +381,7 @@ export default class MeetingsService {
   }
 
   async flushPendingCreatorDigests() {
-    const cutoff = new Date(Date.now() - 3 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
     const states = await this.meetingNotificationStateRepository.find({
       where: { CreatorDigestPendingSince: LessThanOrEqual(cutoff) },
@@ -497,7 +497,6 @@ Vader Whiteout Team
     meeting.Respondents.push(respondent as MeetingRespondent);
     // Do not await the promise to avoid blocking the client
     await this.sendRespondentAddedNotification(meeting, { user, guestName });
-    await this.flushPendingCreatorDigests();
     return meeting;
   }
 

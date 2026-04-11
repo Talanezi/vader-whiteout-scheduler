@@ -317,6 +317,10 @@ export class EnvironmentVariables {
   @Min(0)
   @Max(15)
   REDIS_DATABASE = 0;
+
+  @IsOptional()
+  @IsString()
+  INTERNAL_CRON_SECRET?: string;
 }
 
 export function validate(
