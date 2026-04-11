@@ -3,7 +3,7 @@ import { ModuleRef } from '@nestjs/core';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DateTime } from 'luxon';
 import ShortUniqueId from 'short-unique-id';
-import { Repository } from 'typeorm';
+import { LessThanOrEqual, Repository } from 'typeorm';
 import ConfigService from '../config/config.service';
 import type { DatabaseType } from '../config/env.validation';
 import MailService from '../mail/mail.service';
@@ -13,6 +13,7 @@ import OAuth2Service from '../oauth2/oauth2.service';
 import User from '../users/user.entity';
 import UsersService from '../users/users.service';
 import MeetingRespondent from './meeting-respondent.entity';
+import { MeetingNotificationState } from './meeting-notification-state.entity';
 import Meeting from './meeting.entity';
 import { NoSuchMeetingError, NoSuchRespondentError, createPublicMeetingURL } from './meetings.utils';
 
@@ -51,6 +52,8 @@ export default class MeetingsService {
     @InjectRepository(Meeting) private meetingsRepository: Repository<Meeting>,
     @InjectRepository(MeetingRespondent)
     private respondentsRepository: Repository<MeetingRespondent>,
+    @InjectRepository(MeetingNotificationState)
+    private meetingNotificationStateRepository: Repository<MeetingNotificationState>,
     private readonly mailService: MailService,
     private moduleRef: ModuleRef,
     configService: ConfigService,
@@ -344,39 +347,116 @@ export default class MeetingsService {
       return;
     }
     const respondentName = user?.Name ?? guestName;
-    const body = `Hello ${meetingCreator.Name},
+    await this.queueRespondentAddedDigest(meeting, respondentName);
+  }
 
-${respondentName} added their availability for "${meeting.Name}".
 
-Please visit ${createPublicMeetingURL(this.publicURL, meeting)} for details.
+
+  private async queueRespondentAddedDigest(
+    meeting: Meeting,
+    respondentName: string,
+  ) {
+    let state = await this.meetingNotificationStateRepository.findOne({
+      where: { MeetingID: meeting.ID },
+    });
+
+    if (!state) {
+      state = this.meetingNotificationStateRepository.create({
+        MeetingID: meeting.ID,
+        CreatorDigestPendingSince: new Date(),
+        PendingRespondentNamesJSON: JSON.stringify([respondentName]),
+      });
+    } else {
+      const names = JSON.parse(state.PendingRespondentNamesJSON || '[]') as string[];
+      if (!names.includes(respondentName)) {
+        names.push(respondentName);
+      }
+      state.PendingRespondentNamesJSON = JSON.stringify(names);
+      if (!state.CreatorDigestPendingSince) {
+        state.CreatorDigestPendingSince = new Date();
+      }
+    }
+
+    await this.meetingNotificationStateRepository.save(state);
+  }
+
+  async flushPendingCreatorDigests() {
+    const cutoff = new Date(Date.now() - 3 * 60 * 1000);
+
+    const states = await this.meetingNotificationStateRepository.find({
+      where: { CreatorDigestPendingSince: LessThanOrEqual(cutoff) },
+    });
+
+    for (const state of states) {
+      if (!state.CreatorDigestPendingSince) continue;
+
+      const meeting = await this.meetingsRepository.findOneBy({
+        ID: state.MeetingID,
+      });
+      if (!meeting) continue;
+      if (!meeting.CreatorID) continue;
+
+      const meetingCreator = await this.usersService.findOneByID(meeting.CreatorID);
+      if (!meetingCreator.IsSubscribedToNotifications) continue;
+
+      const respondentNames = JSON.parse(
+        state.PendingRespondentNamesJSON || '[]'
+      ) as string[];
+
+      if (respondentNames.length === 0) {
+        state.CreatorDigestPendingSince = null;
+        await this.meetingNotificationStateRepository.save(state);
+        continue;
+      }
+
+      const count = respondentNames.length;
+      const plural = count === 1 ? '' : 's';
+      const isAre = count === 1 ? 'is' : 'are';
+      const namesText = respondentNames.join(', ');
+      const meetingURL = createPublicMeetingURL(this.publicURL, meeting);
+
+      const body = `Hello ${meetingCreator.Name},
+
+There ${isAre} ${count} new response${plural} for "${meeting.Name}" since the last update.
+
+New respondents: ${namesText}
+
+Please visit ${meetingURL} for details.
 
 Best,
 Vader Whiteout Team
 `;
 
-    const html = emailShell({
-      preheader: `${respondentName} added availability for ${meeting.Name}.`,
-      firstName: meetingCreator.Name,
-      ctaUrl: createPublicMeetingURL(this.publicURL, meeting),
-      ctaText: 'View meeting',
-      bodyHtml: `
-        <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
-          <strong>${escapeHtml(respondentName ?? 'Someone')}</strong> added their availability for <em>${escapeHtml(meeting.Name)}</em>.
-        </p>
-        <p style="margin:0 0 12px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
-          You can review the latest responses and decide on the best time below.
-        </p>
-      `,
-    });
+      const html = emailShell({
+        preheader: `${count} new response${plural} for ${meeting.Name}.`,
+        firstName: meetingCreator.Name,
+        ctaUrl: meetingURL,
+        ctaText: 'View meeting',
+        bodyHtml: `
+          <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+            There ${isAre} ${count} new response${plural} for <em>${escapeHtml(meeting.Name)}</em> since the last update.
+          </p>
+          <p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+            New respondents: ${escapeHtml(namesText)}
+          </p>
+          <p style="margin:0 0 12px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.5;color:#333333;">
+            You can review the latest availability and decide on the best time below.
+          </p>
+        `,
+      });
 
-    await this.mailService.sendNowOrLater({
-      subject: `New availability update for "${meeting.Name}"`,
-      recipient: { address: meetingCreator.Email, name: meetingCreator.Name },
-      body,
-      html,
-    });
+      await this.mailService.sendNowOrLater({
+        subject: `New availability updates for "${meeting.Name}"`,
+        recipient: { address: meetingCreator.Email, name: meetingCreator.Name },
+        body,
+        html,
+      });
+
+      state.CreatorDigestPendingSince = null;
+      state.PendingRespondentNamesJSON = JSON.stringify([]);
+      await this.meetingNotificationStateRepository.save(state);
+    }
   }
-
 
   async addRespondent({
     meetingSlug,
@@ -416,7 +496,8 @@ Vader Whiteout Team
     assert(respondent.RespondentID, 'RespondentID should have been updated');
     meeting.Respondents.push(respondent as MeetingRespondent);
     // Do not await the promise to avoid blocking the client
-    this.sendRespondentAddedNotification(meeting, { user, guestName });
+    await this.sendRespondentAddedNotification(meeting, { user, guestName });
+    await this.flushPendingCreatorDigests();
     return meeting;
   }
 
