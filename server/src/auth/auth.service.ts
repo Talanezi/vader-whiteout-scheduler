@@ -5,6 +5,7 @@ import User from '../users/user.entity';
 import UsersService from '../users/users.service';
 import LocalSignupDto from './local-signup.dto';
 import MailService from '../mail/mail.service';
+import { emailShell, escapeHtml } from '../mail/mail-template.utils';
 import CustomJwtService from '../custom-jwt/custom-jwt.service';
 import VerifyEmailAddressDto, {
   VerifyEmailAddressEntity,
@@ -18,6 +19,7 @@ const SALT_ROUNDS = 10;
 export default class AuthService {
   private readonly logger = new Logger(AuthService.name);
   private readonly publicURL: string;
+  private readonly frontendPublicURL: string;
 
   constructor(
     private usersService: UsersService,
@@ -26,6 +28,8 @@ export default class AuthService {
     configService: ConfigService,
   ) {
     this.publicURL = configService.get('PUBLIC_URL');
+    this.frontendPublicURL =
+      configService.get('FRONTEND_PUBLIC_URL') || this.publicURL;
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
@@ -156,30 +160,54 @@ export default class AuthService {
     return this.signup(signupArgs);
   }
 
-  private createPasswordResetEmailBody(user: User): string {
+  private getPasswordResetURL(user: User): string {
     const { token } = this.jwtService.serializeUserToJwt(user, 'pwreset');
-    const url =
-      this.publicURL + `/confirm-password-reset?pwresetToken=${token}`;
-    if (process.env.NODE_ENV === 'development') {
-      this.logger.debug(`password reset URL=${url}`);
-    }
+    const base = this.frontendPublicURL.endsWith('#')
+      ? this.frontendPublicURL
+      : this.frontendPublicURL + '/#';
+    return `${base}/confirm-password-reset?pwresetToken=${encodeURIComponent(token)}`;
+  }
+
+  private createPasswordResetEmailBody(user: User, url: string): string {
     return (
       `Hello ${user.Name},\n` +
       '\n' +
       'Someone (hopefully you) recently requested a password reset for your\n' +
-      'CabbageMeet account. If this was you, please click the following link\n' +
-      'to proceed:\n' +
+      'Vader Whiteout account. If this was you, please open the link below\n' +
+      'to choose a new password:\n' +
       '\n' +
       url +
       '\n' +
       '\n' +
-      'If this was not you, you may disregard this email.\n' +
+      'This link expires in 4 hours and can only be used once.\n' +
+      '\n' +
+      'If you did not request this, you can safely ignore this email.\n' +
       '\n' +
       '-- \n' +
-      'CabbageMeet | ' +
-      this.publicURL +
+      'Vader Whiteout Team | ' +
+      this.frontendPublicURL +
       '\n'
     );
+  }
+
+  private createPasswordResetEmailHtml(user: User, url: string): string {
+    const safeName = escapeHtml(user.Name);
+    return emailShell({
+      preheader: 'Reset your Vader Whiteout password.',
+      ctaUrl: url,
+      ctaText: 'Reset password',
+      firstName: user.Name,
+      bodyHtml:
+        `<p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">` +
+        `We received a request to reset the password for your Vader Whiteout account.` +
+        `</p>` +
+        `<p style="margin:0 0 16px;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">` +
+        `If this was you, use the button below to choose a new password for <strong>${safeName}</strong>. This link expires in 4 hours and can only be used once.` +
+        `</p>` +
+        `<p style="margin:0;font-family:Roboto,Arial,Helvetica,sans-serif;font-size:16px;line-height:1.6;color:#333333;">` +
+        `If you did not request this, you can safely ignore this email.` +
+        `</p>`,
+    });
   }
 
   async resetPassword(email: string) {
@@ -198,10 +226,15 @@ export default class AuthService {
       this.logger.debug(`User for email=${email} does not have a password`);
       return;
     }
+    const url = this.getPasswordResetURL(user);
+    if (process.env.NODE_ENV === 'development') {
+      this.logger.debug(`password reset URL=${url}`);
+    }
     this.mailService.sendNowOrLater({
       recipient: { address: email, name: user.Name },
-      subject: 'CabbageMeet password reset',
-      body: this.createPasswordResetEmailBody(user),
+      subject: 'Reset your Vader Whiteout password',
+      body: this.createPasswordResetEmailBody(user, url),
+      html: this.createPasswordResetEmailHtml(user, url),
     });
   }
 
