@@ -106,6 +106,7 @@ function AppRoot() {
 
           <Nav className="vw-nav-links">
             <NavItem to="/create" label="Schedule" />
+            <Nav.Link className="vw-nav-link" href="/apps/">Apps</Nav.Link>
             {isLoggedIn ? (
               <>
                 <NavItem to="/meetings" label="Meetings" />
