@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import Form from 'react-bootstrap/Form';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import BottomOverlay from 'components/BottomOverlay';
 import ButtonWithSpinner from 'components/ButtonWithSpinner';
 import { HistoryContext } from 'components/HistoryProvider';
@@ -9,6 +9,7 @@ import { getReqErrorMessage, useMutationWithPersistentError } from "utils/reques
 import styles from './Login.module.css';
 import useSetTitle from 'utils/title.hook';
 import WaitForServerInfo from './WaitForServerInfo';
+import { getPostLoginDestination, getSafeReturnTo } from 'utils/returnTo';
 
 // TODO: reduce code duplication with Signup.tsx
 
@@ -25,6 +26,8 @@ export default function Login() {
 function LoginForm() {
   const [validated, setValidated] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const returnTo = getSafeReturnTo(searchParams.get('returnTo'));
   const [login, {isUninitialized, isLoading, isSuccess, isError, error}] = useMutationWithPersistentError(useLoginMutation);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -56,9 +59,15 @@ function LoginForm() {
 
   useEffect(() => {
     if (isSuccess) {
-      navigate(lastNonAuthPathRef.current);
+      if (returnTo) {
+        window.location.assign(
+          getPostLoginDestination(returnTo, lastNonAuthPathRef.current),
+        );
+      } else {
+        navigate(getPostLoginDestination(null, lastNonAuthPathRef.current));
+      }
     }
-  }, [isSuccess, navigate]);
+  }, [isSuccess, navigate, returnTo]);
 
   return (
     <Form noValidate className={styles.loginForm} {...{validated, onSubmit}}>
