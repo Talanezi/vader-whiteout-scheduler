@@ -40,7 +40,8 @@ jobs:
       - name: Build frontend
         run: npm run build
         env:
-          REACT_APP_API_BASE_URL: https://api-scheduler.vaderwhiteout.com
+          CI: false
+          REACT_APP_API_BASE_URL: https://vader-whiteout-scheduler-production.up.railway.app
 
       - name: Prepare Pages artifact
         run: |
