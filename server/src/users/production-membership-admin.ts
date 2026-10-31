@@ -12,6 +12,7 @@ export async function manageProductionMembership(
   db: DataSource,
   input: {
     action: 'verify' | 'revoke';
+    expectedUserID?: number;
     email: string;
     department?: string;
     role?: string;
@@ -52,6 +53,7 @@ export async function manageProductionMembership(
         'Exactly one existing Scheduler account must match the email.',
       );
     const user = users[0];
+    if(input.expectedUserID !== undefined && Number(user.ID) !== input.expectedUserID) throw new Error('Account changed; refresh the team list.');
     user.ID = Number(user.ID);
     if (!Number.isSafeInteger(user.ID) || user.ID <= 0) throw new Error('Invalid Scheduler account identity.');
     if (

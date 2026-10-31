@@ -2,6 +2,8 @@ import type { VerifiedProductionMembership } from './production-membership';
 import { ApiProperty } from '@nestjs/swagger';
 
 export default class UserResponse {
+  @ApiProperty({ required: false })
+  productionTeamAdmin?: boolean;
   @ApiProperty({ required: false, nullable: true, description: 'Server-verified production membership; never writable through signup/profile.' })
   productionMembership?: VerifiedProductionMembership | null;
 

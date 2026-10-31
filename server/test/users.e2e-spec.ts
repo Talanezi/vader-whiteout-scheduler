@@ -22,7 +22,7 @@ describe('UsersController (e2e)', () => {
 
   it('/api/me (GET)', async () => {
     const { token, ...user } = await createUser(app);
-    await GET('/api/me', app, token).expect(HttpStatus.OK).expect({ ...user, productionMembership: null });
+    await GET('/api/me', app, token).expect(HttpStatus.OK).expect({ ...user, productionMembership: null, productionTeamAdmin: false });
   });
 
   it('/api/me (PATCH)', async () => {
@@ -38,7 +38,7 @@ describe('UsersController (e2e)', () => {
       .expect(HttpStatus.OK)
       .expect(user);
     // changes should have been persisted
-    await GET('/api/me', app, token).expect(HttpStatus.OK).expect({ ...user, productionMembership: null });
+    await GET('/api/me', app, token).expect(HttpStatus.OK).expect({ ...user, productionMembership: null, productionTeamAdmin: false });
     // changing email is not allowed
     await PATCH('/api/me', app, token)
       .send({ email: 'joe@example2.com' })

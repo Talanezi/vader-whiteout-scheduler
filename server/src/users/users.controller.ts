@@ -132,6 +132,7 @@ export class UsersController {
     return {
       ...UserToUserResponse(user),
       productionMembership: await this.usersService.productionMembership(user),
+      productionTeamAdmin: await this.usersService.productionTeamAdmin(user),
     };
   }
 

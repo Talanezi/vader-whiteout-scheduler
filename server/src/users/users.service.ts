@@ -51,6 +51,14 @@ export default class UsersService {
     this.oauth2Service = this.moduleRef.get(OAuth2Service, { strict: false });
   }
 
+  async productionTeamAdmin(user: User) {
+    if (!(await this.productionMembership(user))) return false;
+    try {
+      const record = JSON.parse(await this.dbconfig.get(`production-team-admin:v1:${user.ID}`) || 'null');
+      return record?.enabled === true && record.userID === user.ID && record.email === user.Email.toLowerCase();
+    } catch { return false; }
+  }
+
   async productionMembership(user: User) {
     return verifiedMembership(
       await this.dbconfig.get(membershipKey(user.ID)),

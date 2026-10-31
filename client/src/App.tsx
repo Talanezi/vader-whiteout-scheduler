@@ -1,3 +1,4 @@
+import ProductionTeam from 'components/ProductionTeam';
 import Container from 'react-bootstrap/Container';
 import Nav from 'react-bootstrap/Nav';
 import Navbar from 'react-bootstrap/Navbar';
@@ -77,7 +78,7 @@ export default function App() {
                 <Route path="settings" element={<Settings />} />
               </Route>
 
-              <Route path="crew" element={<Navigate to="/me" replace />} />
+              <Route path="crew" element={<ProductionTeam />} />
               <Route path="*" element={<h3 className="vw-simple-heading">Page not found</h3>} />
             </Route>
           </Routes>

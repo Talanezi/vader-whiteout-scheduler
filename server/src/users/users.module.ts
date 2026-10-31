@@ -1,3 +1,4 @@
+import { ProductionTeamController } from './production-team.controller';
 import DbconfigModule from '../dbconfig/dbconfig.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -17,6 +18,6 @@ import { UserTemplatesController } from './user-templates.controller';
   ],
   providers: [UsersService, UserTemplatesService],
   exports: [UsersService, TypeOrmModule],
-  controllers: [UsersController, UserTemplatesController],
+  controllers: [UsersController, UserTemplatesController, ProductionTeamController],
 })
 export default class UsersModule {}

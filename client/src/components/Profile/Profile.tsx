@@ -48,6 +48,7 @@ export default function Profile() {
   return (
     <div className="flex-grow-1 d-flex flex-column">
       <Heading />
+      {(userInfo as typeof userInfo & {productionTeamAdmin?:boolean})?.productionTeamAdmin && <Link to="/crew" className="align-self-end mb-3">Production team administration</Link>}
       <div className={styles.createdRespondedWrap}><CreatedRespondedToggle {...{seeCreatedMeetings, setSeeCreatedMeetings}} /></div>
       <div className="flex-grow-1 d-flex flex-column align-items-center">
         <CreatedOrRespondedMeetings showCreatedMeetings={seeCreatedMeetings} />
