@@ -11,6 +11,8 @@ import {
 } from '../oauth2/oauth2-common';
 import OAuth2Service from '../oauth2/oauth2.service';
 import User from './user.entity';
+import { DbconfigService } from '../dbconfig/dbconfig.service';
+import { membershipKey, verifiedMembership } from './production-membership';
 
 export class UserAlreadyExistsError extends Error {}
 
@@ -39,6 +41,7 @@ export default class UsersService {
     configService: ConfigService,
     @InjectRepository(User) private userRepository: Repository<User>,
     private moduleRef: ModuleRef,
+    private dbconfig: DbconfigService,
   ) {
     this.dbType = configService.get('DATABASE_TYPE');
   }
@@ -46,6 +49,13 @@ export default class UsersService {
   onModuleInit() {
     // circular dependency
     this.oauth2Service = this.moduleRef.get(OAuth2Service, { strict: false });
+  }
+
+  async productionMembership(user: User) {
+    return verifiedMembership(
+      await this.dbconfig.get(membershipKey(user.ID)),
+      user,
+    );
   }
 
   async updateTimestamp(user: User, timestamp: number) {

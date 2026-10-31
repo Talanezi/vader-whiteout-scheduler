@@ -128,8 +128,11 @@ export class UsersController {
     operationId: 'getSelfInfo',
   })
   @Get()
-  getUserInfo(@AuthUser() user: User): UserResponse {
-    return UserToUserResponse(user);
+  async getUserInfo(@AuthUser() user: User): Promise<UserResponse> {
+    return {
+      ...UserToUserResponse(user),
+      productionMembership: await this.usersService.productionMembership(user),
+    };
   }
 
   // TODO: create separate endpoint for user to edit their email address

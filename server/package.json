@@ -27,7 +27,8 @@
     "migration:generate:mariadb": "DATABASE_TYPE=mariadb typeorm-ts-node-esm migration:generate -d datasource.ts --outputJs ./migrations/mariadb/Migration",
     "migration:run:mariadb": "DATABASE_TYPE=mariadb typeorm-ts-node-esm migration:run -d datasource.ts",
     "migration:generate:postgres": "DATABASE_TYPE=postgres typeorm-ts-node-esm migration:generate -d datasource.ts --outputJs ./migrations/postgres/Migration",
-    "migration:run:postgres": "DATABASE_TYPE=postgres typeorm-ts-node-esm migration:run -d datasource.ts"
+    "migration:run:postgres": "DATABASE_TYPE=postgres typeorm-ts-node-esm migration:run -d datasource.ts",
+    "team:membership": "node dist/src/users/production-membership-cli.js"
   },
   "dependencies": {
     "@nestjs/common": "^9.4.2",

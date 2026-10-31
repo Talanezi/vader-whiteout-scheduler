@@ -1,3 +1,4 @@
+import DbconfigModule from '../dbconfig/dbconfig.module';
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UsersController } from './users.controller';
@@ -9,7 +10,11 @@ import { UserTemplatesService } from './user-templates.service';
 import { UserTemplatesController } from './user-templates.controller';
 
 @Module({
-  imports: [MeetingsModule, TypeOrmModule.forFeature([User, UserTemplate])],
+  imports: [
+    DbconfigModule,
+    MeetingsModule,
+    TypeOrmModule.forFeature([User, UserTemplate]),
+  ],
   providers: [UsersService, UserTemplatesService],
   exports: [UsersService, TypeOrmModule],
   controllers: [UsersController, UserTemplatesController],
