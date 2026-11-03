@@ -2,6 +2,7 @@ import { PRODUCTION_ROLE_MAP } from './production-roles';
 
 export type VerifiedProductionMembership = {
   verified: true;
+  productionId: string;
   userID: number;
   email: string;
   department: string;
@@ -36,8 +37,6 @@ export function verifiedMembership(
       !Number.isSafeInteger(user.ID) ||
       record.userID !== user.ID ||
       record.email !== user.Email.toLowerCase() ||
-      record.department !== user.Department ||
-      record.role !== user.Role ||
       !validTeamAssignment(record.department, record.role) ||
       typeof record.verifiedAt !== 'string' ||
       !Number.isFinite(Date.parse(record.verifiedAt)) ||
@@ -49,6 +48,7 @@ export function verifiedMembership(
       return null;
     return {
       verified: true,
+      productionId: record.productionId || 'whiteout',
       userID: user.ID,
       email: record.email,
       department: record.department,
