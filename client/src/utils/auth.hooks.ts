@@ -37,6 +37,7 @@ export function useExtractTokenFromQueryParams(): boolean {
     const token = searchParamsRef.current.get('token');
     const nonce = searchParamsRef.current.get('nonce');
     if (token !== null && nonce === null) {
+      sessionStorage.setItem('whiteout:auth-callback-error','Sign-in could not be verified. Please try again.');
       // The AppRoot is waiting for us to clear the token parameter, so if the URL
       // is malformed, just fix it and return
       const newParams = new URLSearchParams(searchParamsRef.current);
@@ -49,7 +50,9 @@ export function useExtractTokenFromQueryParams(): boolean {
     }
     if (nonce === getSessionNonce()) {
       dispatch(setToken(token));
+      sessionStorage.removeItem('whiteout:auth-callback-error');
     } else {
+      sessionStorage.setItem('whiteout:auth-callback-error','Sign-in could not be verified. Please try again.');
       console.error('Sign-in callback could not be verified. Please retry signing in.');
     }
     removeSessionNonce();

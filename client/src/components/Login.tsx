@@ -28,6 +28,7 @@ function LoginForm() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const returnTo = getSafeReturnTo(searchParams.get('returnTo'));
+  const callbackError=sessionStorage.getItem('whiteout:auth-callback-error');
   const [login, {isUninitialized, isLoading, isSuccess, isError, error}] = useMutationWithPersistentError(useLoginMutation);
   const emailRef = useRef<HTMLInputElement>(null);
   const passwordRef = useRef<HTMLInputElement>(null);
@@ -38,6 +39,7 @@ function LoginForm() {
   const submitBtnDisabled = isLoading;
   if (isUninitialized || isError) {
     onSubmit = (ev) => {
+      sessionStorage.removeItem('whiteout:auth-callback-error');
       ev.preventDefault();
       const form = ev.currentTarget;
       if (form.checkValidity()) {
@@ -103,6 +105,7 @@ function LoginForm() {
           Please enter your password.
         </Form.Control.Feedback>
       </Form.Group>
+      {callbackError && <p role="alert" className="text-danger text-center mb-0 mt-3">{callbackError}</p>}
       {error && (
         <p className="text-danger text-center mb-0 mt-3">
           An error occurred: {getReqErrorMessage(error)}
