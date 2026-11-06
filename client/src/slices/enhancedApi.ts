@@ -225,7 +225,7 @@ async function getSelfInfo_onQueryStarted(
   try {
     await queryFulfilled;
   } catch (err: any) {
-    console.warn(err);
+    console.warn('Scheduler session request failed; credentials and private response omitted.');
     if (err?.error?.status === 401) {
       dispatch(removeToken());
     }

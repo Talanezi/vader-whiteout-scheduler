@@ -1,3 +1,4 @@
+import {randomUUID} from 'crypto';
 import { INestApplication } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import type { NestExpressApplication } from '@nestjs/platform-express';
@@ -46,7 +47,8 @@ async function bootstrap() {
   // Note: in development, you will still see the X-Powered-By header in the browser.
   // This is being added by the Create-React-App server, not by Nest.
   app.disable('x-powered-by');
-  app.use(morgan('combined'));
+  app.use((req:any,res:any,next:()=>void)=>{req.whiteoutRequestId=randomUUID();res.setHeader('X-Request-ID',req.whiteoutRequestId);res.setHeader('Cache-Control','no-store, private');next()});
+  app.use(morgan((tokens,req:any,res)=>JSON.stringify({type:'request',service:'scheduler',requestId:req.whiteoutRequestId,method:req.method,category:String(req.route?.path||req.path.split('/').slice(0,3).join('/')),status:Number(tokens.status(req,res)),ms:Number(tokens['response-time'](req,res)),revision:process.env.RAILWAY_GIT_COMMIT_SHA||'local',at:new Date().toISOString()})));
   app.use(
     helmet({
       // Setting a header to false prevents it from being set

@@ -16,9 +16,12 @@ export type QueryWrapper<T> = {
 export function getReqErrorMessage(error: FetchBaseQueryError | SerializedError): string {
   if (error.hasOwnProperty('status')) {
     if (typeof (error as FetchBaseQueryError).status === 'string') {
-      return (error as FetchBaseQueryError).status as string;
+      const kind=(error as FetchBaseQueryError).status;
+      return kind==='TIMEOUT_ERROR'?'The service took too long to respond. Please retry.':kind==='FETCH_ERROR'?'Unable to reach the sign-in service. Check your connection, then retry.':'The service response could not be read. Please retry.';
     }
-    if (typeof (error as FetchBaseQueryError).data === 'object') {
+    if ((error as FetchBaseQueryError).status===429) return 'Too many requests. Please wait a moment and retry.';
+    if (Number((error as FetchBaseQueryError).status)>=500) return 'The sign-in service is temporarily unavailable. Your session has been preserved; please retry.';
+    if ((error as FetchBaseQueryError).data && typeof (error as FetchBaseQueryError).data === 'object') {
       if ((((error as FetchBaseQueryError).data) as any).hasOwnProperty('message')) {
         return (((error as FetchBaseQueryError).data) as any).message as string;
       }

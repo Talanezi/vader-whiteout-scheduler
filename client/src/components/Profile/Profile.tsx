@@ -19,9 +19,9 @@ import useSetTitle from "utils/title.hook";
 
 export default function Profile() {
   const tokenIsPresent = useAppSelector(selectTokenIsPresent);
-  const {data: userInfo, isError} = useGetSelfInfoQuery(undefined, {skip: !tokenIsPresent});
+  const {data: userInfo, isError, error: sessionError, refetch} = useGetSelfInfoQuery(undefined, {skip: !tokenIsPresent});
   const userInfoIsPresent = !!userInfo;
-  const shouldBeRedirectedToHomePage = !tokenIsPresent || isError;
+  const shouldBeRedirectedToHomePage = !tokenIsPresent || (isError && (sessionError as any)?.status===401);
   const navigate = useNavigate();
   const [seeCreatedMeetings, setSeeCreatedMeetings] = useState(true);
 
@@ -40,6 +40,8 @@ export default function Profile() {
   if (shouldBeRedirectedToHomePage) {
     return null;
   }
+
+  if(isError) return <section className="vw-service-recovery" role="alert"><h2>Connection interrupted</h2><p>{getReqErrorMessage(sessionError!)}</p><button className="btn btn-primary" onClick={()=>refetch()}>Try again</button></section>;
 
   if (!userInfoIsPresent) {
     return <GenericSpinner />;

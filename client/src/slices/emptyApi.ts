@@ -4,7 +4,8 @@ import type { RootState } from 'app/store';
 export const emptyApi = createApi({
   reducerPath: 'api',
   baseQuery: fetchBaseQuery({
-    baseUrl: process.env.REACT_APP_API_BASE_URL || '/',
+    timeout: 20000,
+    baseUrl: process.env.REACT_APP_API_BASE_URL || (process.env.NODE_ENV==='production'?'https://scheduler-api.vaderwhiteout.com':'/'),
     prepareHeaders: (headers, {getState}) => {
       // Adapted from
       // https://github.com/reduxjs/redux-toolkit/blob/master/examples/query/react/authentication/src/app/services/auth.ts

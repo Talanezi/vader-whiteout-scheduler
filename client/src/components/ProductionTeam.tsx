@@ -6,7 +6,7 @@ import { Link } from 'react-router-dom';
 type Account={id:number;name:string;email:string;department:string;role:string;membership:{verified:boolean}|null};
 export default function ProductionTeam(){
  const token=useAppSelector(selectToken),[items,setItems]=useState<Account[]>([]),[error,setError]=useState(''),[selected,setSelected]=useState<Account|null>(null),[evidence,setEvidence]=useState(''),[busy,setBusy]=useState(false),[search,setSearch]=useState('');
- const base=(process.env.REACT_APP_API_BASE_URL||'').replace(/\/$/,'');
+ const base=(process.env.REACT_APP_API_BASE_URL||(process.env.NODE_ENV==='production'?'https://scheduler-api.vaderwhiteout.com':'')).replace(/\/$/,'');
  const request=useCallback(async(route='',body?:unknown)=>{const response=await fetch(base+'/api/production-team'+route,{method:body===undefined?'GET':'POST',headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Error(data.message||'Unable to manage production team.');return data;},[base,token]);
  const load=useCallback(async()=>{try{const data=await request();setItems(data.items);setError('');}catch(e){setError(e instanceof Error?e.message:'Unable to load team.');}},[request]);
  useEffect(()=>{if(token)void load();else setError('Sign in to manage the production team.');},[token,load]);

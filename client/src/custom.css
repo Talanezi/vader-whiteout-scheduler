@@ -609,3 +609,7 @@ html[data-theme="dark"] textarea {
   color-scheme: dark !important;
 }
 
+
+.vw-service-recovery{max-width:440px;margin:12vh auto;padding:28px;background:var(--bg1);border:1px solid var(--line);border-radius:16px;color:var(--ink)}.vw-service-recovery h2{font-size:22px;margin-bottom:12px}.vw-service-recovery p{color:var(--mute);line-height:1.6}.vw-service-recovery button{margin-top:12px}
+
+.vw-service-loading{display:flex;align-items:center;justify-content:center;gap:12px;min-height:45vh;color:var(--mute);font-size:14px}.vw-service-dots{display:inline-flex;align-items:center;gap:4px;width:24px;height:24px;flex:0 0 24px}.vw-service-dots i{width:4px;height:4px;background:var(--custom-primary);border-radius:50%;animation:vw-dot-pulse 1s ease-in-out infinite}.vw-service-dots i:nth-child(2){animation-delay:120ms}.vw-service-dots i:nth-child(3){animation-delay:240ms}@keyframes vw-dot-pulse{0%,80%,100%{opacity:.35;transform:translateY(0)}40%{opacity:1;transform:translateY(-2px)}}@media(prefers-reduced-motion:reduce){.vw-service-dots i{animation:none}}

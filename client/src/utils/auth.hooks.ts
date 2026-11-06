@@ -50,7 +50,7 @@ export function useExtractTokenFromQueryParams(): boolean {
     if (nonce === getSessionNonce()) {
       dispatch(setToken(token));
     } else {
-      console.error(`nonce '${nonce}' from server did not match '${getSessionNonce()}'`);
+      console.error('Sign-in callback could not be verified. Please retry signing in.');
     }
     removeSessionNonce();
     const newParams = new URLSearchParams(searchParamsRef.current);

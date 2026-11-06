@@ -27,9 +27,9 @@ import useSetTitle from "utils/title.hook";
 
 export default function Settings() {
   const tokenIsPresent = useAppSelector(selectTokenIsPresent);
-  const {data: userInfo, isError} = useGetSelfInfoQuery(undefined, {skip: !tokenIsPresent});
+  const {data: userInfo, isError, error: sessionError, refetch} = useGetSelfInfoQuery(undefined, {skip: !tokenIsPresent});
   const userInfoIsPresent = !!userInfo;
-  const shouldBeRedirectedToHomePage = !tokenIsPresent || isError;
+  const shouldBeRedirectedToHomePage = !tokenIsPresent || (isError && (sessionError as any)?.status===401);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -43,6 +43,8 @@ export default function Settings() {
   if (shouldBeRedirectedToHomePage) {
     return null;
   }
+
+  if(isError) return <section className="vw-service-recovery" role="alert"><h2>Connection interrupted</h2><p>{getReqErrorMessage(sessionError!)}</p><button className="btn btn-primary" onClick={()=>refetch()}>Try again</button></section>;
 
   if (!userInfoIsPresent) {
     return <GenericSpinner />;
@@ -178,7 +180,7 @@ function AppleCalendarAccount() {
       setIsLoading(true);
       setError(null);
       const resp = await fetch(
-        'https://vader-whiteout-scheduler-production.up.railway.app/api/me/apple-calendar.ics',
+        (process.env.REACT_APP_API_BASE_URL||'https://scheduler-api.vaderwhiteout.com').replace(/\/$/,'')+'/api/me/apple-calendar.ics',
         {
           headers: {
             Authorization: `Bearer ${token}`,
